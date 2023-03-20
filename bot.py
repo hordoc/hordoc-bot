@@ -5,7 +5,7 @@ from pprint import pprint as pp
 
 import discord
 
-from data import AuthorItem, MessageItem
+from data import GuildItem, ForumChannelItem, ThreadItem, AuthorItem, MessageItem
 
 
 intents = discord.Intents.default()
@@ -36,27 +36,29 @@ async def on_ready():
 
     guilds = [guild for guild in client.guilds if guild.id in guilds_ids]
     for guild in guilds:
+        g = GuildItem.from_discord(guild)
+        pp(g)
         forums = [channel for channel in guild.forums if channel.id in forums_ids]
         for forum in forums:
+            f = ForumChannelItem.from_discord(forum)
+            pp(f)
             threads = forum.threads
             for thread in threads:
-                thread_name = thread.name
-                print(f"Thread name: {thread_name}")
-
+                t = ThreadItem.from_discord(thread)
+                pp(t)
                 # TODO start from beginning, do incremental based on last known.
                 async for message in thread.history():
-
                     if message.author.id not in seen_authors:
                         print(f"Got a new author: {message.author}")
                         seen_authors.add(message.author.id)
                         a = AuthorItem.from_discord(message.author)
                         pp(a)
 
-                    # print(f"Message: {message.content}")
                     m = MessageItem.from_discord(message)
                     pp(m)
 
     print("We are done with scraping!")
+    await client.close()
 
 
 @client.event
