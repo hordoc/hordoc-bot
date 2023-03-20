@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 
 import os
+from pprint import pprint as pp
 
 import discord
+
+from data import AuthorItem, MessageItem
+
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -12,9 +16,13 @@ guilds_ids = [int(guild_id) for guild_id in os.environ["DISCORD_GUILD_IDS"].spli
 forums_ids = [int(forum_id) for forum_id in os.environ["DISCORD_FORUM_IDS"].split(",")]
 status_channel_id = int(os.environ["DISCORD_STATUS_CHANNEL_ID"])
 
-
 assert len(guilds_ids), "Missing DISCORD_GUILD_IDS"
 assert len(forums_ids), "Missing DISCORD_FORUM_IDS"
+
+# TODO
+# Create data classes for
+# guild
+# forum_thread
 
 
 @client.event
@@ -23,6 +31,8 @@ async def on_ready():
 
     # channel = client.get_channel(status_channel_id)
     # await channel.send(f"The Doctor is in tha House!")
+
+    seen_authors = set()
 
     guilds = [guild for guild in client.guilds if guild.id in guilds_ids]
     for guild in guilds:
@@ -33,8 +43,20 @@ async def on_ready():
                 thread_name = thread.name
                 print(f"Thread name: {thread_name}")
 
+                # TODO start from beginning, do incremental based on last known.
                 async for message in thread.history():
-                    print(f"Message: {message.content}")
+
+                    if message.author.id not in seen_authors:
+                        print(f"Got a new author: {message.author}")
+                        seen_authors.add(message.author.id)
+                        a = AuthorItem.from_discord(message.author)
+                        pp(a)
+
+                    # print(f"Message: {message.content}")
+                    m = MessageItem.from_discord(message)
+                    pp(m)
+
+    print("We are done with scraping!")
 
 
 @client.event
@@ -42,4 +64,5 @@ async def on_message(message):
     pass
 
 
-client.run(os.environ["DISCORD_SECRET"])
+if __name__ == "__main__":
+    client.run(os.environ["DISCORD_SECRET"])
