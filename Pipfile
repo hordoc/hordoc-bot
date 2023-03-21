@@ -5,6 +5,8 @@ name = "pypi"
 
 [packages]
 "discord.py" = "*"
+sqlite-utils = "*"
+datasette = "*"
 
 [dev-packages]
 black = "*"
