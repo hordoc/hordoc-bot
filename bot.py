@@ -31,9 +31,7 @@ print(f"Guilds: {guilds_ids}")
 print(f"Forums: {forums_ids}")
 print(f"Status Channel: {status_channel_id}")
 
-# TODO make configurable, move db to context
-DB_PATH = "data/mikex_workshop.db"
-db = sqlite_utils.Database(DB_PATH)
+db = sqlite_utils.Database(os.environ["DB_PATH"])
 
 
 @client.event
@@ -43,6 +41,23 @@ async def on_ready():
     # await channel.send(f"The Doctor is in tha House!")
 
     seen_authors = set()
+
+    async def scrape_thread(thread):
+        t = ThreadItem.from_discord(thread)
+        pp(t)
+        db["threads"].insert(asdict(t), pk="id", replace=True)
+        # TODO start from beginning, do incremental based on last known.
+        async for message in thread.history():
+            if message.author.id not in seen_authors:
+                print(f"Got a new author: {message.author}")
+                seen_authors.add(message.author.id)
+                a = AuthorItem.from_discord(message.author)
+                pp(a)
+                db["authors"].insert(asdict(a), pk="id", replace=True)
+
+            m = MessageItem.from_discord(message)
+            pp(m)
+        db["messages"].insert(asdict(m), pk="id", replace=True)
 
     guilds = [guild for guild in client.guilds if guild.id in guilds_ids]
     for guild in guilds:
@@ -55,23 +70,10 @@ async def on_ready():
             f = ForumChannelItem.from_discord(forum)
             pp(f)
             db["channels"].insert(asdict(f), pk="id", replace=True)
-            threads = forum.threads
-            for thread in threads:
-                t = ThreadItem.from_discord(thread)
-                pp(t)
-                db["threads"].insert(asdict(t), pk="id", replace=True)
-                # TODO start from beginning, do incremental based on last known.
-                async for message in thread.history():
-                    if message.author.id not in seen_authors:
-                        print(f"Got a new author: {message.author}")
-                        seen_authors.add(message.author.id)
-                        a = AuthorItem.from_discord(message.author)
-                        pp(a)
-                        db["authors"].insert(asdict(a), pk="id", replace=True)
-
-                    m = MessageItem.from_discord(message)
-                    pp(m)
-                    db["messages"].insert(asdict(m), pk="id", replace=True)
+            for thread in forum.threads:
+                scrape_thread(thread)
+            async for thread in forum.archived_threads():
+                await scrape_thread(thread)
 
     print("We are done with scraping!")
     await client.close()
