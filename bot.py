@@ -3,7 +3,7 @@
 from dataclasses import asdict
 import os
 from pprint import pprint as pp
-
+from dotenv import load_dotenv
 import discord
 import sqlite_utils
 
@@ -16,8 +16,9 @@ from data import (
     ensure_tables,
 )
 
+
+load_dotenv()
 intents = discord.Intents.default()
-intents.message_content = True
 
 client = discord.Client(intents=intents)
 guilds_ids = [int(guild_id) for guild_id in os.environ["DISCORD_GUILD_IDS"].split(",")]
