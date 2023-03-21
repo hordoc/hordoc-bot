@@ -14,6 +14,7 @@ class GuildItem:
     Dataclass for a Discord Guild (Server).
     Reference: https://discordpy.readthedocs.io/en/latest/api.html?highlight=message#discord.Guild
     """
+
     id: int
     name: str
 
@@ -34,18 +35,18 @@ class ForumChannelItem:
     Dataclass for a Discord ForumChannel.
     Reference: https://discordpy.readthedocs.io/en/latest/api.html?highlight=message#discord.ForumChannel
     """
+
     id: int
+    guild_id: int
     name: str
+    type: str
 
     @staticmethod
     def from_discord(f: discord.ForumChannel) -> "ForumChannelItem":
         """
         Create a ForumChannelItem from a `discord.ForumChannel`.
         """
-        return ForumChannelItem(
-            id=f.id,
-            name=f.name,
-        )
+        return ForumChannelItem(id=f.id, guild_id=f.guild.id, name=f.name, type="forum")
 
 
 @dataclass
@@ -56,6 +57,7 @@ class ThreadItem:
     """
 
     id: int
+    parent_id: int
     name: str
 
     @staticmethod
@@ -65,6 +67,7 @@ class ThreadItem:
         """
         return ThreadItem(
             id=t.id,
+            parent_id=t.parent_id,
             name=t.name,
         )
 
@@ -127,4 +130,69 @@ class MessageItem:
             created_at=dt_to_ms(m.created_at),
             author_id=m.author.id,
             content=m.content,
+        )
+
+
+def ensure_tables(db):
+    # Create tables manually, because if we create them automatically
+    # we may create items without 'title' first, which breaks
+    # when we later call ensure_fts()
+    if "guilds" not in db.table_names():
+        db["guilds"].create(
+            {
+                "id": int,
+                "name": str,
+            },
+            pk="id",
+            column_order=("id", "name"),
+        )
+    if "channels" not in db.table_names():
+        # Can be forum channel or text channel
+        db["channels"].create(
+            {
+                "id": int,
+                "guild_id": int,
+                "name": str,
+                "type": str,
+            },
+            pk="id",
+            column_order=("id", "guild_id", "name", "type"),
+            foreign_keys=[("guild_id", "guilds", "id")],
+        )
+    if "threads" not in db.table_names():
+        db["threads"].create(
+            {
+                "id": int,
+                "parent_id": int,
+                "name": str,
+            },
+            pk="id",
+            column_order=("id", "parent_id", "name"),
+            foreign_keys=[("parent_id", "channels", "id")],
+        )
+    if "authors" not in db.table_names():
+        db["authors"].create(
+            {
+                "id": int,
+                "name": str,
+                "discriminator": str,
+            },
+            pk="id",
+            column_order=("id", "name", "discriminator"),
+        )
+    if "messages" not in db.table_names():
+        db["messages"].create(
+            {
+                "id": int,
+                "channel_id": int,
+                "created_at": int,
+                "author_id": int,
+                "content": str,
+            },
+            pk="id",
+            column_order=("id", "channel_id", "name"),
+            foreign_keys=[
+                ("channel_id", "channels", "id"),
+                ("author_id", "authors", "id"),
+            ],
         )
