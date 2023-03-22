@@ -50,19 +50,20 @@ if __name__ == "__main__":
     data = requests.get(url).json()
     rows = data['rows']
     print(rows[0])
-
+    """
     rephrased = [{'id' : row[0] ,'rephrased' : rephrase_question(row[2],row[3])} for row in rows]
     with open('rephrased.json', 'w+') as f :
         json.dump(rephrased, f)
     """
-    parses the data and saves it to a json file
+    #parses the data and saves it to a json file
     d = []
-    for row in rows :
-        parsed = {'id': row[0], 'embeddings' : get_embeddings(row[2]).tolist()}
-        d.append(parsed)
-    with (open('embeddings.json', 'w+')) as f :
-        json.dump(d, f)
-    """
+    with open('rephrased.json') as f :
+        rephrases = json.loads(f.read())
+        for row in rephrases :
+            parsed = {'id': row['id'], 'rephrased' : row['rephrased'], 'embeddings' : get_embeddings(row['rephrased']).tolist()}
+            d.append(parsed)
+        with (open('rephrased.json', 'w+')) as f :
+            json.dump(d, f)
     """
     processes a question from the json file
     with open('./embeddings.json') as f :
