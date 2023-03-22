@@ -1,5 +1,6 @@
 from sentence_transformers import SentenceTransformer
-
+from sentence_transformers import util
+import torch
 model = SentenceTransformer("sentence-transformers/gtr-t5-large")
 threshold = 0.8
 
@@ -10,7 +11,6 @@ def get_embeddings(text : list or str) :
 def find_most_similar(text, corpus, top_k=5) :
     corpus_embeddings = get_embeddings(corpus)
     query_embedding = get_embeddings([text])
-    from sentence_transformers import util
     closest_n = util.semantic_search(query_embedding, corpus_embeddings, top_k=top_k)
     best_score = closest_n[0]['score']
     if best_score < threshold :
@@ -32,9 +32,18 @@ if __name__ == "__main__":
     #with (open('embeddings.json', 'w+')) as f :
     #    json.dump(d, f)
     with open('./embeddings.json') as f :
-        contents= json.loads(f.read())
-        print(contents.keys())
-        embeddings = [c.embeddings for c in contents]
         question = 'I have kudos but cant generate the image'
         question_embedding = get_embeddings(question)
-        print(find_most_similar(question, embeddings))
+        contents= json.loads(f.read())
+        embeddings = [torch.tensor(c['embeddings']) for c in contents]
+
+        closest_n = util.semantic_search(question_embedding, embeddings, top_k=5)
+        print(closest_n[0])
+
+        best_score = closest_n[0][0]['score']
+        ids = [c['corpus_id'] for c in closest_n[0]]
+        db_ids = [contents[i]['id'] for i in ids]
+        questions = [row for row in rows if row[0] in db_ids]
+        if best_score < threshold :
+            print('threshold not met : ', best_score)
+        print(questions)
