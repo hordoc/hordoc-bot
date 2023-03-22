@@ -58,6 +58,7 @@ class ThreadItem:
 
     id: int
     parent_id: int
+    owner_id: int
     name: str
 
     @staticmethod
@@ -68,6 +69,7 @@ class ThreadItem:
         return ThreadItem(
             id=t.id,
             parent_id=t.parent_id,
+            owner_id=t.owner_id,
             name=t.name,
         )
 
@@ -159,17 +161,6 @@ def ensure_tables(db):
             column_order=("id", "guild_id", "name", "type"),
             foreign_keys=[("guild_id", "guilds", "id")],
         )
-    if "threads" not in db.table_names():
-        db["threads"].create(
-            {
-                "id": int,
-                "parent_id": int,
-                "name": str,
-            },
-            pk="id",
-            column_order=("id", "parent_id", "name"),
-            foreign_keys=[("parent_id", "channels", "id")],
-        )
     if "authors" not in db.table_names():
         db["authors"].create(
             {
@@ -179,6 +170,21 @@ def ensure_tables(db):
             },
             pk="id",
             column_order=("id", "name", "discriminator"),
+        )
+    if "threads" not in db.table_names():
+        db["threads"].create(
+            {
+                "id": int,
+                "parent_id": int,
+                "owner_id": int,
+                "name": str,
+            },
+            pk="id",
+            column_order=("id", "parent_id", "owner_id", "name"),
+            foreign_keys=[
+                ("parent_id", "channels", "id"),
+                ("owner_id", "authors", "id"),
+            ],
         )
     if "messages" not in db.table_names():
         db["messages"].create(
@@ -192,7 +198,6 @@ def ensure_tables(db):
             pk="id",
             column_order=("id", "channel_id", "name"),
             foreign_keys=[
-                ("channel_id", "channels", "id"),
                 ("author_id", "authors", "id"),
             ],
         )
