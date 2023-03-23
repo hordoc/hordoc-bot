@@ -1,9 +1,13 @@
+import json
+import os
 from sentence_transformers import SentenceTransformer
 from sentence_transformers import util
 from dotenv import load_dotenv
+import torch
 load_dotenv('../.env')
 model = SentenceTransformer("sentence-transformers/gtr-t5-large")
 threshold = 0.8
+dirname= os.path.dirname(__file__)
 
 
 def get_embeddings(text : list or str) :
@@ -19,7 +23,26 @@ def find_most_similar(text, corpus, top_k=5) :
         return []
     return closest_n
 
+def find_most_similar_question(question, threshold = 0.8) :
+    with open(os.path.join(dirname,'rephrased.json')) as f :
+        rephrased = json.loads(f.read())
+        embeddings = [torch.tensor(r['embeddings']) for r in rephrased]
+        closest_n =  util.semantic_search(get_embeddings(question), embeddings, top_k=5)[0]
+        if closest_n :
+            ids = [{'id' : r['corpus_id'], 'score' : r['score']} for r in closest_n]
+            data = [{'text' : rephrased[i['id']]['rephrased'], 'score' : i['score']}  for i in ids]
+            print('data', data)
+            return data
+        return []
 
+def get_answer_for_question(question) :
+    with open(os.path.join(dirname,'answers.json')) as f :
+        d = json.loads(f.read())
+        for row in d :
+            print(row['question'], question)
+            if row['question'] == question :
+                return row['answer']
+        return 'Sorry, I don\'t know the answer to that question. Try asking in the forum.'
 
 def rephrase_question(question, text) :
     import openai

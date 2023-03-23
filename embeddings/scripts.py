@@ -2,7 +2,7 @@
 import json
 
 import torch
-from embeddings_search import get_embeddings, rephrase_question
+from .embeddings_search import get_embeddings, rephrase_question
 from sentence_transformers import util
 import requests
 import json
@@ -26,7 +26,7 @@ def find_closest_question(question, rows, threshold=0.8) :
 		questions = [row for row in rows if row[0] in db_ids]
 		if best_score < threshold :
 			print('threshold not met : ', best_score)
-		print(questions)
+		return questions[0]
 
 
 def rephrase_from_db(rows, save_to_file=False) :
