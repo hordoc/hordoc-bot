@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from collections import Counter
 from dataclasses import asdict
 import os
 from pprint import pprint as pp
@@ -35,12 +36,8 @@ print(f"Status Channel: {status_channel_id}")
 db = sqlite_utils.Database(os.environ["DB_PATH"])
 
 
-@client.event
-async def on_ready():
-    print(f"We have logged in as {client.user}")
-    # channel = await client.fetch_channel(status_channel_id)
-    # await channel.send(f"The Doctor is in tha House!")
-
+async def scrape_guilds() -> Counter:
+    stats = Counter()
     seen_authors = set()
 
     async def scrape_thread(thread):
@@ -55,28 +52,44 @@ async def on_ready():
                 a = AuthorItem.from_discord(message.author)
                 pp(a)
                 db["authors"].insert(asdict(a), pk="id", replace=True)
+                stats["authors"] += 1
 
             m = MessageItem.from_discord(message)
             pp(m)
-        db["messages"].insert(asdict(m), pk="id", replace=True)
+            db["messages"].insert(asdict(m), pk="id", replace=True)
+            stats["messages"] += 1
 
     guilds = [guild for guild in client.guilds if guild.id in guilds_ids]
     for guild in guilds:
         g = GuildItem.from_discord(guild)
         pp(g)
         db["guilds"].insert(asdict(g), pk="id", replace=True)
+        stats["guilds"] += 1
 
         forums = [channel for channel in guild.forums if channel.id in forums_ids]
         for forum in forums:
             f = ForumChannelItem.from_discord(forum)
             pp(f)
             db["channels"].insert(asdict(f), pk="id", replace=True)
+            stats["forums"] += 1
             for thread in forum.threads:
                 scrape_thread(thread)
-            async for thread in forum.archived_threads():
+                stats["threads"] += 1
+
+            async for thread in forum.archived_threads(limit=None):
                 await scrape_thread(thread)
+                stats["archived_threads"] += 1
+    return stats
+
+
+@client.event
+async def on_ready():
+    print(f"We have logged in as {client.user}")
+
+    stats = await scrape_guilds()
 
     print("We are done with scraping!")
+    print("Statistics: ", stats)
     await client.close()
 
 
