@@ -4,6 +4,8 @@ from dataclasses import asdict
 import os
 from pprint import pprint as pp
 from dotenv import load_dotenv
+load_dotenv()
+
 import discord
 import sqlite_utils
 
@@ -17,7 +19,6 @@ from data import (
 )
 
 
-load_dotenv()
 intents = discord.Intents.default()
 
 client = discord.Client(intents=intents)

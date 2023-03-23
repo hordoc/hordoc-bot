@@ -1,0 +1,3 @@
+Title: {{{question}}}
+Content: {{{text}}}
+Given the above question and context, what is the best way to rephrase the question? Answer in one sentence.
