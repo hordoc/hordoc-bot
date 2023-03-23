@@ -7,13 +7,17 @@ import time
 from typing import Literal, Optional
 from pprint import pprint as pp
 from dotenv import load_dotenv
+
 load_dotenv()
 
 import discord
 from discord.ext.commands import Greedy, Context
 from discord.ext import commands
 import sqlite_utils
-from embeddings.embeddings_search import find_most_similar_question, get_answer_for_question
+from embeddings.embeddings_search import (
+    find_most_similar_question,
+    get_answer_for_question,
+)
 from data import (
     GuildItem,
     ForumChannelItem,
@@ -27,7 +31,7 @@ from data import (
 intents = discord.Intents.default()
 intents.message_content = True
 
-client = commands.Bot(command_prefix='!', intents=intents)
+client = commands.Bot(command_prefix="!", intents=intents)
 guilds_ids = [int(guild_id) for guild_id in os.environ["DISCORD_GUILD_IDS"].split(",")]
 forums_ids = [int(forum_id) for forum_id in os.environ["DISCORD_FORUM_IDS"].split(",")]
 status_channel_id = int(os.environ["DISCORD_STATUS_CHANNEL_ID"])
@@ -92,23 +96,24 @@ async def scrape_guilds() -> Counter:
 async def on_ready():
     print(f"We have logged in as {client.user}")
 
-    #stats = await scrape_guilds()
+    # stats = await scrape_guilds()
 
     print("We are done with scraping!")
-    #print("Statistics: ", stats)
-    #await client.close()
+    # print("Statistics: ", stats)
+    # await client.close()
+
 
 @client.tree.command(name="question", description="Ask something !")
-@discord.app_commands.describe(question = "Your question")
+@discord.app_commands.describe(question="Your question")
 async def question(interaction: discord.Interaction, question: str):
     await interaction.response.defer()
-    q  = find_most_similar_question(question)
-    a = get_answer_for_question(q[0]['text'])
+    q = find_most_similar_question(question)
+    a = get_answer_for_question(q[0]["text"])
     print(a)
     q_as_str = ""
     for item in q:
         q_as_str += str(item) + "\n"
-    try :
+    try:
         await interaction.followup.send(q_as_str + "\n Answer : " + a)
     except Exception as e:
         await interaction.followup.send(f"Une erreur est survenue : {e}")
@@ -118,7 +123,10 @@ async def question(interaction: discord.Interaction, question: str):
 @commands.guild_only()
 @commands.is_owner()
 async def sync(
-  ctx: Context, guilds: Greedy[discord.Object], spec: Optional[Literal["~", "*", "^"]] = None) -> None:
+    ctx: Context,
+    guilds: Greedy[discord.Object],
+    spec: Optional[Literal["~", "*", "^"]] = None,
+) -> None:
     if not guilds:
         if spec == "~":
             synced = await ctx.bot.tree.sync(guild=ctx.guild)
@@ -147,7 +155,6 @@ async def sync(
             ret += 1
 
     await ctx.send(f"Synced the tree to {ret}/{len(guilds)}.")
-
 
 
 if __name__ == "__main__":
