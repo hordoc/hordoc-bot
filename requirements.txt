@@ -1,0 +1,5 @@
+discord.py
+sqlite-utils
+datasette
+sentence_transformers
+python-dotenv
