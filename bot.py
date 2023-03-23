@@ -3,11 +3,15 @@
 from collections import Counter
 from dataclasses import asdict
 import os
+import time
+from typing import Literal, Optional
 from pprint import pprint as pp
 from dotenv import load_dotenv
 load_dotenv()
 
 import discord
+from discord.ext.commands import Greedy, Context
+from discord.ext import commands
 import sqlite_utils
 
 from data import (
@@ -21,8 +25,9 @@ from data import (
 
 
 intents = discord.Intents.default()
+intents.message_content = True
 
-client = discord.Client(intents=intents)
+client = commands.Bot(command_prefix='!', intents=intents)
 guilds_ids = [int(guild_id) for guild_id in os.environ["DISCORD_GUILD_IDS"].split(",")]
 forums_ids = [int(forum_id) for forum_id in os.environ["DISCORD_FORUM_IDS"].split(",")]
 status_channel_id = int(os.environ["DISCORD_STATUS_CHANNEL_ID"])
@@ -74,7 +79,7 @@ async def scrape_guilds() -> Counter:
             db["channels"].insert(asdict(f), pk="id", replace=True)
             stats["forums"] += 1
             for thread in forum.threads:
-                scrape_thread(thread)
+                await scrape_thread(thread)
                 stats["threads"] += 1
 
             async for thread in forum.archived_threads(limit=None):
@@ -91,12 +96,53 @@ async def on_ready():
 
     print("We are done with scraping!")
     print("Statistics: ", stats)
-    await client.close()
+    #await client.close()
+
+@client.tree.command(name="question", description="Ask something !")
+@discord.app_commands.describe(question = "Your question")
+async def question(interaction: discord.Interaction, question: str):
+	await interaction.response.defer()
+	try :
+		time.sleep(3)
+		await interaction.followup.send(question)
+	except Exception as e:
+		await interaction.followup.send(f"Une erreur est survenue : {e}")
 
 
-@client.event
-async def on_message(message):
-    pass
+@client.command()
+@commands.guild_only()
+@commands.is_owner()
+async def sync(
+  ctx: Context, guilds: Greedy[discord.Object], spec: Optional[Literal["~", "*", "^"]] = None) -> None:
+	if not guilds:
+		if spec == "~":
+			synced = await ctx.bot.tree.sync(guild=ctx.guild)
+		elif spec == "*":
+			ctx.bot.tree.copy_global_to(guild=ctx.guild)
+			synced = await ctx.bot.tree.sync(guild=ctx.guild)
+		elif spec == "^":
+			ctx.bot.tree.clear_commands(guild=ctx.guild)
+			await ctx.bot.tree.sync(guild=ctx.guild)
+			synced = []
+		else:
+			synced = await ctx.bot.tree.sync()
+
+		await ctx.send(
+			f"Synced {len(synced)} commands {'globally' if spec is None else 'to the current guild.'}"
+		)
+		return
+
+	ret = 0
+	for guild in guilds:
+		try:
+			await ctx.bot.tree.sync(guild=guild)
+		except discord.HTTPException:
+			pass
+		else:
+			ret += 1
+
+	await ctx.send(f"Synced the tree to {ret}/{len(guilds)}.")
+
 
 
 if __name__ == "__main__":
