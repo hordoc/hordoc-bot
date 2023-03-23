@@ -8,6 +8,7 @@ name = "pypi"
 sqlite-utils = "*"
 datasette = "*"
 sentence_transformers = "*"
+python-dotenv = "*"
 
 [dev-packages]
 black = "*"
