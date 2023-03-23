@@ -6,11 +6,6 @@ Public Discord communities struggle to quickly and accurately answer user questi
 
 HorDoc learns from previous support channel conversations to reduce the repetitive workload on community members, speed up response times, and enhance the user experience for both new and existing users seeking help in your community.
 
-## Team
-[All-Ki](https://github.com/All-Ki) & [MischaU8](https://github.com/MischaU8)
-
-This project is sponsored by the [AI Horde](https://aihorde.net/)
-
 ## Installation
 
 To install and run HorDoc locally, you need at least Python 3.9 and a couple Python libraries which you can install with `pip`.
@@ -43,3 +38,8 @@ Run the bot via:
 ## Design
 
 Read our [Motivation for design / architecture decisions](DESIGN.md)
+
+## Team
+[All-Ki](https://github.com/All-Ki) & [MischaU8](https://github.com/MischaU8)
+
+This project is sponsored by the [AI Horde](https://aihorde.net/)
