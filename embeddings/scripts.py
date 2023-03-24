@@ -131,50 +131,32 @@ Include relevant urls if they are known
     )
 
 
+
+def build_channel_response(channel_id) :
+        print(channel_id)
+        messages = get_channel_messages(channel_id)
+        if(len(messages) < 2) :
+            return None
+        print(messages)
+        embeddings = get_channel_answers_embeddings(channel_id)
+        embeddings_only = [e['embeddings'] for e in embeddings]
+        question_embeddings = get_question_embeddings_for_channel(channel_id)
+        closest_n = util.semantic_search(question_embeddings, embeddings_only, top_k=5)
+        closest_n_ids = [embeddings[c['corpus_id']]['id'] for c in closest_n[0]]
+
+        print(closest_n_ids)
+        closest_n_messages = [message for message in messages if message[0] in closest_n_ids]
+
+        closest_n_messages_text = [m[1] for m in closest_n_messages]
+        print(closest_n_messages_text)
+        question = get_question_for_channel(channel_id)
+        print()
+        print(question)
+        answer = build_answer(question[0], closest_n_messages_text)
+        return answer
+
 if __name__ == "__main__":
-    channel_ids = get_channel_ids()
-    return_data = []
-    try:
-        for channel_id in channel_ids:
-            print(channel_id)
-            messages = get_channel_messages(channel_id)
-            if len(messages) < 2:
-                continue
-            print(messages)
-            embeddings = get_channel_answers_embeddings(channel_id)
-            embeddings_only = [e["embeddings"] for e in embeddings]
-            question_embeddings = get_question_embeddings_for_channel(channel_id)
-            closest_n = util.semantic_search(
-                question_embeddings, embeddings_only, top_k=5
-            )
-            closest_n_ids = [embeddings[c["corpus_id"]]["id"] for c in closest_n[0]]
-
-            print(closest_n_ids)
-            closest_n_messages = [
-                message for message in messages if message[0] in closest_n_ids
-            ]
-
-            closest_n_messages_text = [m[1] for m in closest_n_messages]
-            print(closest_n_messages_text)
-            question = get_question_for_channel(channel_id)
-            print()
-            print(question)
-            answer = build_answer(question[0], closest_n_messages_text)
-            return_data.append(
-                {
-                    "id": channel_id,
-                    "question": question[0],
-                    "answer": answer,
-                    "messages": closest_n_messages,
-                }
-            )
-    except Exception as e:
-        print(e)
-        with open("answers.json", "w+") as f:
-            json.dump(return_data, f)
-    with open("answers.json", "w+") as f:
-        json.dump(return_data, f)
-
+    pass
 
 """
 channel_id = '1021208495414071307'
@@ -190,6 +172,6 @@ closest_n = util.semantic_search(question_embedding, embeddings, top_k=10)
 ids = [c['corpus_id'] for c in closest_n[0]]
 closest_n_text = [messages[i] for i in ids]
 for i in closest_n_text :
-	print(i)
-	print('---------------------')
+    print(i)
+    print('---------------------')
 """
