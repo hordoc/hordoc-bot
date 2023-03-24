@@ -5,8 +5,10 @@ from sentence_transformers import util
 from dotenv import load_dotenv
 import torch
 
-load_dotenv("../.env")
-model = SentenceTransformer("sentence-transformers/gtr-t5-large")
+GPT_MODEL = "gpt-3.5-turbo"
+EMBEDDINGS_MODEL = "sentence-transformers/gtr-t5-large"
+
+model = SentenceTransformer(EMBEDDINGS_MODEL)
 threshold = 0.8
 dirname = os.path.dirname(__file__)
 
@@ -65,14 +67,14 @@ def rephrase_question(question, text):
     Title: {question}
     Content: {text}
     Given the above question and context, what is the best way to rephrase the question? Answer in one sentence.
-    """
+    """  # noqa: E501
     data = [
         {"role": "system", "content": "Execute the following task :"},
         {"role": "user", "content": prompt},
     ]
     return (
         openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
+            model=GPT_MODEL,
             messages=data,
             temperature=0,
             max_tokens=500,
@@ -83,6 +85,8 @@ def rephrase_question(question, text):
 
 
 if __name__ == "__main__":
+    load_dotenv("../.env")
+
     # URL TO GET ALL POSTS
     pass
     """
@@ -91,7 +95,9 @@ if __name__ == "__main__":
     with open('rephrased.json') as f :
         rephrases = json.loads(f.read())
         for row in rephrases :
-            parsed = {'id': row['id'], 'rephrased' : row['rephrased'], 'embeddings' : get_embeddings(row['rephrased']).tolist()}
+            parsed = {
+                'id': row['id'], 'rephrased' : row['rephrased'],
+                'embeddings' : get_embeddings(row['rephrased']).tolist()}
             d.append(parsed)
         with (open('rephrased.json', 'w+')) as f :
             json.dump(d, f)
