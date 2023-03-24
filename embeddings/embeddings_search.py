@@ -1,34 +1,37 @@
 import json
 import os
-from sentence_transformers import SentenceTransformer
-from sentence_transformers import util
+
 from dotenv import load_dotenv
+from sentence_transformers import SentenceTransformer, util
 import torch
+import openai
 
-GPT_MODEL = "gpt-3.5-turbo"
 EMBEDDINGS_MODEL = "sentence-transformers/gtr-t5-large"
+GPT_MODEL = "gpt-3.5-turbo"
+SIMILARITY_THRESHOLD = 0.8
 
-model = SentenceTransformer(EMBEDDINGS_MODEL)
-threshold = 0.8
 dirname = os.path.dirname(__file__)
+model = SentenceTransformer(EMBEDDINGS_MODEL)
+openai.api_key = os.environ["OPENAI_API_KEY"]
 
 
 def get_embeddings(text: list or str):
     return model.encode(text)
 
 
+# unused
 def find_most_similar(text, corpus, top_k=5):
     corpus_embeddings = get_embeddings(corpus)
     query_embedding = get_embeddings([text])
     closest_n = util.semantic_search(query_embedding, corpus_embeddings, top_k=top_k)
     best_score = closest_n[0]["score"]
-    if best_score < threshold:
+    if best_score < SIMILARITY_THRESHOLD:
         print("best_score", best_score)
         return []
     return closest_n
 
 
-def find_most_similar_question(question, threshold=0.8):
+def find_most_similar_question(question):
     with open(os.path.join(dirname, "rephrased.json")) as f:
         rephrased = json.loads(f.read())
         embeddings = [torch.tensor(r["embeddings"]) for r in rephrased]
@@ -59,10 +62,6 @@ def get_answer_for_question(question):
 
 
 def rephrase_question(question, text):
-    import openai
-    import os
-
-    openai.api_key = os.environ["OPENAI_API_KEY"]
     prompt = f"""
     Title: {question}
     Content: {text}

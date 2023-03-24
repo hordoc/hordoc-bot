@@ -3,18 +3,15 @@
 from collections import Counter
 from dataclasses import asdict
 import os
-import time
-from typing import Literal, Optional
 from pprint import pprint as pp
-from dotenv import load_dotenv
-from views import AnswerView
-
-load_dotenv()
+from typing import Literal, Optional
 
 import discord
 from discord.ext.commands import Greedy, Context
 from discord.ext import commands
+from dotenv import load_dotenv
 import sqlite_utils
+
 from embeddings.embeddings_search import (
     find_most_similar_question,
     get_answer_for_question,
@@ -27,7 +24,7 @@ from data import (
     MessageItem,
     ensure_tables,
 )
-
+from views import AnswerView
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -99,7 +96,7 @@ async def on_ready():
 
     # stats = await scrape_guilds()
 
-    print("We are done with scraping!")
+    # print("We are done with scraping!")
     # print("Statistics: ", stats)
     # await client.close()
 
@@ -177,5 +174,6 @@ async def sync(
 
 
 if __name__ == "__main__":
+    load_dotenv()
     ensure_tables(db)
     client.run(os.environ["DISCORD_SECRET"])
