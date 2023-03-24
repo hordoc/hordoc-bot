@@ -1,149 +1,164 @@
-
 import json
 
 import torch
-from embeddings_search import get_embeddings, rephrase_question
+from .embeddings_search import get_embeddings, rephrase_question
 from sentence_transformers import util
 import requests
 import json
 import openai
 import os
+
 openai.api_key = os.environ["OPENAI_API_KEY"]
 
-def find_closest_question(question, rows, threshold=0.8) :
-	with open('./embeddings.json') as f :
-		question = 'I have kudos but cant generate the image'
-		question_embedding = get_embeddings(question)
-		contents= json.loads(f.read())
-		embeddings = [torch.tensor(c['embeddings']) for c in contents]
 
-		closest_n = util.semantic_search(question_embedding, embeddings, top_k=5)
-		print(closest_n[0])
+def find_closest_question(question, rows, threshold=0.8):
+    with open("./embeddings.json") as f:
+        question = "I have kudos but cant generate the image"
+        question_embedding = get_embeddings(question)
+        contents = json.loads(f.read())
+        embeddings = [torch.tensor(c["embeddings"]) for c in contents]
 
-		best_score = closest_n[0][0]['score']
-		ids = [c['corpus_id'] for c in closest_n[0]]
-		db_ids = [contents[i]['id'] for i in ids]
-		questions = [row for row in rows if row[0] in db_ids]
-		if best_score < threshold :
-			print('threshold not met : ', best_score)
-		print(questions)
+        closest_n = util.semantic_search(question_embedding, embeddings, top_k=5)
+        print(closest_n[0])
 
-
-def rephrase_from_db(rows, save_to_file=False) :
-	rephrased = [{'id' : row[0] ,'rephrased' : rephrase_question(row[2],row[3])} for row in rows]
-	if save_to_file :
-		with open('rephrased.json', 'w+') as f :
-			json.dump(rephrased, f)
-	return rephrased
+        best_score = closest_n[0][0]["score"]
+        ids = [c["corpus_id"] for c in closest_n[0]]
+        db_ids = [contents[i]["id"] for i in ids]
+        questions = [row for row in rows if row[0] in db_ids]
+        if best_score < threshold:
+            print("threshold not met : ", best_score)
+        return questions[0]
 
 
+def rephrase_from_db(rows, save_to_file=False):
+    rephrased = [
+        {"id": row[0], "rephrased": rephrase_question(row[2], row[3])} for row in rows
+    ]
+    if save_to_file:
+        with open("rephrased.json", "w+") as f:
+            json.dump(rephrased, f)
+    return rephrased
 
 
-def get_channel_ids() :
-	with open('rephrased.json') as f :
-		contents = json.loads(f.read())
-		return [c['id'] for c in contents]
-
-def get_channel_question_embeddings(channel_ids) :
-	with open('rephrased.json') as f :
-		contents = json.loads(f.read())
-		embeddings = [torch.tensor(c['embeddings']) for c in contents if c['id'] in channel_ids]
-		return embeddings
-
-def get_channel_messages(channel_id) :
-	url = f'https://horde-qna-db.spevktator.io/horde_support.json?sql=select+id%2C+content+from+messages+where+%22channel_id%22+%3D+%3Ap0+order+by+id+desc+limit+101&p0={channel_id}'
-	data = requests.get(url).json()
-	messages = [d for d in data['rows'] if d[0] != channel_id]
-	return messages
-
-def build_channels_embeddings() :
-	channel_ids = get_channel_ids()
-	embeddings_list = []
-	with open('channel_embeddings.json', 'r+') as f :
-		for channel_id in channel_ids :
-			messages = get_channel_messages(channel_id)
-			messages_text = [m[1] for m in messages if m[0] != channel_id]
-			embeddings = get_embeddings(messages_text)
-			embedding = [{'message_id' : messages[i][0], 'embeddings' : e.tolist()} for i, e in enumerate(embeddings)]
-			embeddings_list.append({'channel_id' : channel_id, 'embeddings' : embedding})
-	with open('channel_embeddings.json', 'w+') as f :
-		json.dump(embeddings_list, f)
-
-def get_channel_answers_embeddings(channel_id) :
-	with open('channel_embeddings.json') as f :
-		contents = json.loads(f.read())
-		channel = [c for c in contents if c['channel_id'] == channel_id][0]
-		embeddings = [{'id' : c['message_id'], 'embeddings': torch.tensor(c['embeddings'])} for c in channel['embeddings']]
-		return embeddings
-
-def get_question_embeddings_for_channel(channel_id) :
-	with open('rephrased.json') as f :
-		contents = json.loads(f.read())
-		embeddings = [torch.tensor(c['embeddings']) for c in contents if c['id'] == channel_id]
-		return embeddings
-
-def get_question_for_channel(channel_id) :
-	with open('rephrased.json') as f :
-		contents = json.loads(f.read())
-		question = [c['rephrased'] for c in contents if c['id'] == channel_id]
-		return question
+def get_channel_ids():
+    with open("rephrased.json") as f:
+        contents = json.loads(f.read())
+        return [c["id"] for c in contents]
 
 
-def build_answer(question, corpus) :
-	prompt = f"""
+def get_channel_question_embeddings(channel_ids):
+    with open("rephrased.json") as f:
+        contents = json.loads(f.read())
+        embeddings = [
+            torch.tensor(c["embeddings"]) for c in contents if c["id"] in channel_ids
+        ]
+        return embeddings
+
+
+def get_channel_messages(channel_id):
+    url = f"https://horde-qna-db.spevktator.io/horde_support.json?sql=select+id%2C+content+from+messages+where+%22channel_id%22+%3D+%3Ap0+order+by+id+desc+limit+101&p0={channel_id}"
+    data = requests.get(url).json()
+    messages = [d for d in data["rows"] if d[0] != channel_id]
+    return messages
+
+
+def build_channels_embeddings():
+    channel_ids = get_channel_ids()
+    embeddings_list = []
+    with open("channel_embeddings.json", "r+") as f:
+        for channel_id in channel_ids:
+            messages = get_channel_messages(channel_id)
+            messages_text = [m[1] for m in messages if m[0] != channel_id]
+            embeddings = get_embeddings(messages_text)
+            embedding = [
+                {"message_id": messages[i][0], "embeddings": e.tolist()}
+                for i, e in enumerate(embeddings)
+            ]
+            embeddings_list.append({"channel_id": channel_id, "embeddings": embedding})
+    with open("channel_embeddings.json", "w+") as f:
+        json.dump(embeddings_list, f)
+
+
+def get_channel_answers_embeddings(channel_id):
+    with open("channel_embeddings.json") as f:
+        contents = json.loads(f.read())
+        channel = [c for c in contents if c["channel_id"] == channel_id][0]
+        embeddings = [
+            {"id": c["message_id"], "embeddings": torch.tensor(c["embeddings"])}
+            for c in channel["embeddings"]
+        ]
+        return embeddings
+
+
+def get_question_embeddings_for_channel(channel_id):
+    with open("rephrased.json") as f:
+        contents = json.loads(f.read())
+        embeddings = [
+            torch.tensor(c["embeddings"]) for c in contents if c["id"] == channel_id
+        ]
+        return embeddings
+
+
+def get_question_for_channel(channel_id):
+    with open("rephrased.json") as f:
+        contents = json.loads(f.read())
+        question = [c["rephrased"] for c in contents if c["id"] == channel_id]
+        return question
+
+
+def build_answer(question, corpus):
+    prompt = f"""
 Using this data :
 {corpus}
 Formulate an answer to this question :
 {question}
 Include relevant urls if they are known
 """
-	print(prompt)
-	data = [
-			{"role": "system", "content": 'Execute the following task :'},
-			{"role": "user", "content": prompt}
-	]
-	return openai.ChatCompletion.create(
-		model="gpt-3.5-turbo",
-		messages=data,
-		temperature=0,
-		max_tokens=500,
-	).choices[0].message.content.strip()
+    print(prompt)
+    data = [
+        {"role": "system", "content": "Execute the following task :"},
+        {"role": "user", "content": prompt},
+    ]
+    return (
+        openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=data,
+            temperature=0,
+            max_tokens=500,
+        )
+        .choices[0]
+        .message.content.strip()
+    )
 
 
+def build_channel_response(channel_id):
+    print(channel_id)
+    messages = get_channel_messages(channel_id)
+    if len(messages) < 2:
+        return None
+    print(messages)
+    embeddings = get_channel_answers_embeddings(channel_id)
+    embeddings_only = [e["embeddings"] for e in embeddings]
+    question_embeddings = get_question_embeddings_for_channel(channel_id)
+    closest_n = util.semantic_search(question_embeddings, embeddings_only, top_k=5)
+    closest_n_ids = [embeddings[c["corpus_id"]]["id"] for c in closest_n[0]]
 
-if __name__ == "__main__" :
-	channel_ids = get_channel_ids()
-	return_data = []
-	try :
-		for channel_id in channel_ids :
-			print(channel_id)
-			messages = get_channel_messages(channel_id)
-			if(len(messages) < 2) :
-				continue
-			print(messages)
-			embeddings = get_channel_answers_embeddings(channel_id)
-			embeddings_only = [e['embeddings'] for e in embeddings]
-			question_embeddings = get_question_embeddings_for_channel(channel_id)
-			closest_n = util.semantic_search(question_embeddings, embeddings_only, top_k=5)
-			closest_n_ids = [embeddings[c['corpus_id']]['id'] for c in closest_n[0]]
+    print(closest_n_ids)
+    closest_n_messages = [
+        message for message in messages if message[0] in closest_n_ids
+    ]
 
-			print(closest_n_ids)
-			closest_n_messages = [message for message in messages if message[0] in closest_n_ids]
+    closest_n_messages_text = [m[1] for m in closest_n_messages]
+    print(closest_n_messages_text)
+    question = get_question_for_channel(channel_id)
+    print()
+    print(question)
+    answer = build_answer(question[0], closest_n_messages_text)
+    return answer
 
-			closest_n_messages_text = [m[1] for m in closest_n_messages]
-			print(closest_n_messages_text)
-			question = get_question_for_channel(channel_id)
-			print()
-			print(question)
-			answer = build_answer(question[0], closest_n_messages_text)
-			return_data.append({'id' : channel_id,'question' : question[0], 'answer' : answer, 'messages' : closest_n_messages})
-	except Exception as e :
-		print(e)
-		with open('answers.json', 'w+') as f :
-			json.dump(return_data, f)
-	with open('answers.json', 'w+') as f :
-		json.dump(return_data, f)
 
+if __name__ == "__main__":
+    pass
 
 """
 channel_id = '1021208495414071307'
@@ -159,6 +174,6 @@ closest_n = util.semantic_search(question_embedding, embeddings, top_k=10)
 ids = [c['corpus_id'] for c in closest_n[0]]
 closest_n_text = [messages[i] for i in ids]
 for i in closest_n_text :
-	print(i)
-	print('---------------------')
+    print(i)
+    print('---------------------')
 """

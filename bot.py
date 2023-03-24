@@ -7,13 +7,18 @@ import time
 from typing import Literal, Optional
 from pprint import pprint as pp
 from dotenv import load_dotenv
+from views import AnswerView
+
 load_dotenv()
 
 import discord
 from discord.ext.commands import Greedy, Context
 from discord.ext import commands
 import sqlite_utils
-
+from embeddings.embeddings_search import (
+    find_most_similar_question,
+    get_answer_for_question,
+)
 from data import (
     GuildItem,
     ForumChannelItem,
@@ -27,7 +32,7 @@ from data import (
 intents = discord.Intents.default()
 intents.message_content = True
 
-client = commands.Bot(command_prefix='!', intents=intents)
+client = commands.Bot(command_prefix="!", intents=intents)
 guilds_ids = [int(guild_id) for guild_id in os.environ["DISCORD_GUILD_IDS"].split(",")]
 forums_ids = [int(forum_id) for forum_id in os.environ["DISCORD_FORUM_IDS"].split(",")]
 status_channel_id = int(os.environ["DISCORD_STATUS_CHANNEL_ID"])
@@ -92,57 +97,83 @@ async def scrape_guilds() -> Counter:
 async def on_ready():
     print(f"We have logged in as {client.user}")
 
-    stats = await scrape_guilds()
+    # stats = await scrape_guilds()
 
     print("We are done with scraping!")
-    print("Statistics: ", stats)
-    #await client.close()
+    # print("Statistics: ", stats)
+    # await client.close()
+
 
 @client.tree.command(name="question", description="Ask something !")
-@discord.app_commands.describe(question = "Your question")
+@discord.app_commands.describe(question="Your question")
 async def question(interaction: discord.Interaction, question: str):
-	await interaction.response.defer()
-	try :
-		time.sleep(3)
-		await interaction.followup.send(question)
-	except Exception as e:
-		await interaction.followup.send(f"Une erreur est survenue : {e}")
+    answer_certainty = 0.8
+    await interaction.response.defer()
+    try:
+        q = find_most_similar_question(question)
+        if q[0]["score"] > answer_certainty:
+            a = get_answer_for_question(q[0]["text"])
+            await interaction.followup.send(
+                "Your question was : "
+                + question
+                + "\n\nAnswer : "
+                + a
+                + "\n\nWas this answer usefull ?",
+                view=AnswerView.WasAnswerUsefullView(),
+            )
+            return
+        else:
+            str_to_send = (
+                "Sorry, but i didn't find anything satisfying enough to answer you. \nYour question was : "
+                + question
+                + "\nThe most similar questions are :  \n\n"
+            )
+            for i, item in enumerate(q):
+                str_to_send += f"{str(i)} - {str(item['text'])} ({str(round(item['score']* 100))} % ) \n\n"
+            str_to_send += "Is any of these questions what you were looking for ?"
+            await interaction.followup.send(
+                str_to_send, view=AnswerView.SelectQuestionView()
+            )
+    except Exception as e:
+        await interaction.followup.send(f"Une erreur est survenue : {e}")
 
 
 @client.command()
 @commands.guild_only()
 @commands.is_owner()
 async def sync(
-  ctx: Context, guilds: Greedy[discord.Object], spec: Optional[Literal["~", "*", "^"]] = None) -> None:
-	if not guilds:
-		if spec == "~":
-			synced = await ctx.bot.tree.sync(guild=ctx.guild)
-		elif spec == "*":
-			ctx.bot.tree.copy_global_to(guild=ctx.guild)
-			synced = await ctx.bot.tree.sync(guild=ctx.guild)
-		elif spec == "^":
-			ctx.bot.tree.clear_commands(guild=ctx.guild)
-			await ctx.bot.tree.sync(guild=ctx.guild)
-			synced = []
-		else:
-			synced = await ctx.bot.tree.sync()
+    ctx: Context,
+    guilds: Greedy[discord.Object],
+    spec: Optional[Literal["~", "*", "^"]] = None,
+) -> None:
+    if not guilds:
+        if spec == "~":
+            synced = await ctx.bot.tree.sync(guild=ctx.guild)
+        elif spec == "*":
+            ctx.bot.tree.copy_global_to(guild=ctx.guild)
+            synced = await ctx.bot.tree.sync(guild=ctx.guild)
+        elif spec == "^":
+            ctx.bot.tree.clear_commands(guild=ctx.guild)
+            await ctx.bot.tree.sync(guild=ctx.guild)
+            synced = []
+        else:
+            synced = await ctx.bot.tree.sync()
 
-		await ctx.send(
-			f"Synced {len(synced)} commands {'globally' if spec is None else 'to the current guild.'}"
-		)
-		return
+        await ctx.send(
+            f"Synced {len(synced)} commands {'globally' if spec is None else 'to the current guild.'}"
+        )
+        return
 
-	ret = 0
-	for guild in guilds:
-		try:
-			await ctx.bot.tree.sync(guild=guild)
-		except discord.HTTPException:
-			pass
-		else:
-			ret += 1
+    ret = 0
+    for guild in guilds:
+        try:
+            await ctx.bot.tree.sync(guild=guild)
+        except discord.HTTPException:
+            pass
+        else:
+            ret += 1
 
-	await ctx.send(f"Synced the tree to {ret}/{len(guilds)}.")
-
+    await ctx.send(f"Synced the tree to {ret}/{len(guilds)}.")
 
 
 if __name__ == "__main__":
