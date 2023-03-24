@@ -115,8 +115,8 @@ async def question(interaction: discord.Interaction, question: str):
                 + question
                 + "\n\nAnswer : "
                 + a
-                + "\n\nWas this answer usefull ?",
-                view=AnswerView.WasAnswerUsefullView(),
+                + "\n\nWas this answer useful ?",
+                view=AnswerView.WasAnswerUsefulView(),
             )
             return
         else:
@@ -132,7 +132,7 @@ async def question(interaction: discord.Interaction, question: str):
                 str_to_send, view=AnswerView.SelectQuestionView()
             )
     except Exception as e:
-        await interaction.followup.send(f"Une erreur est survenue : {e}")
+        await interaction.followup.send(f"An error has occurred : {e}")
 
 
 @client.command()

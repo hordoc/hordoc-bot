@@ -1,7 +1,7 @@
 import discord
 
 
-class WasAnswerUsefullView(discord.ui.View):
+class WasAnswerUsefulView(discord.ui.View):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.answer = None
