@@ -8,6 +8,7 @@ from typing import Literal, Optional
 from pprint import pprint as pp
 from dotenv import load_dotenv
 from views import AnswerView
+
 load_dotenv()
 
 import discord
@@ -110,16 +111,29 @@ async def question(interaction: discord.Interaction, question: str):
     await interaction.response.defer()
     try:
         q = find_most_similar_question(question)
-        if(q[0]['score'] > answer_certainty):
+        if q[0]["score"] > answer_certainty:
             a = get_answer_for_question(q[0]["text"])
-            await interaction.followup.send('Your question was : ' +question + '\n\nAnswer : ' + a + '\n\nWas this answer usefull ?', view=AnswerView.WasAnswerUsefullView())
+            await interaction.followup.send(
+                "Your question was : "
+                + question
+                + "\n\nAnswer : "
+                + a
+                + "\n\nWas this answer usefull ?",
+                view=AnswerView.WasAnswerUsefullView(),
+            )
             return
-        else :
-            str_to_send = "Sorry, but i didn't find anything satisfying enough to answer you. \nYour question was : " + question + "\nThe most similar questions are :  \n\n"
-            for i,item in enumerate(q):
+        else:
+            str_to_send = (
+                "Sorry, but i didn't find anything satisfying enough to answer you. \nYour question was : "
+                + question
+                + "\nThe most similar questions are :  \n\n"
+            )
+            for i, item in enumerate(q):
                 str_to_send += f"{str(i)} - {str(item['text'])} ({str(round(item['score']* 100))} % ) \n\n"
             str_to_send += "Is any of these questions what you were looking for ?"
-            await interaction.followup.send(str_to_send, view=AnswerView.SelectQuestionView())
+            await interaction.followup.send(
+                str_to_send, view=AnswerView.SelectQuestionView()
+            )
     except Exception as e:
         await interaction.followup.send(f"Une erreur est survenue : {e}")
 

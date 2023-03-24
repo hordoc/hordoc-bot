@@ -1,6 +1,7 @@
 import discord
 
-class WasAnswerUsefullView(discord.ui.View) :
+
+class WasAnswerUsefullView(discord.ui.View):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.answer = None
@@ -15,13 +16,17 @@ class WasAnswerUsefullView(discord.ui.View) :
         self.answer = False
         self.stop()
 
-opts = ['0','1','2','3','4', 'None of the above']
+
+opts = ["0", "1", "2", "3", "4", "None of the above"]
 select_options = [discord.SelectOption(label=opt, value=opt) for opt in opts]
-class SelectQuestionView(discord.ui.View) :
+
+
+class SelectQuestionView(discord.ui.View):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-
     @discord.ui.select(options=select_options)
-    async def select_question(self, select: discord.ui.Select, interaction: discord.Interaction):
+    async def select_question(
+        self, select: discord.ui.Select, interaction: discord.Interaction
+    ):
         self.stop()
