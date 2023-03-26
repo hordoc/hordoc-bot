@@ -26,6 +26,8 @@ from data import (
 )
 from views import AnswerView
 
+load_dotenv()
+
 intents = discord.Intents.default()
 intents.message_content = True
 
@@ -174,6 +176,5 @@ async def sync(
 
 
 if __name__ == "__main__":
-    load_dotenv()
     ensure_tables(db)
     client.run(os.environ["DISCORD_SECRET"])
