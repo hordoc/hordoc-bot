@@ -9,6 +9,7 @@ sqlite-utils = "*"
 datasette = "*"
 sentence_transformers = "*"
 python-dotenv = "*"
+openai = "*"
 
 [dev-packages]
 black = "*"

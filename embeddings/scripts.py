@@ -1,12 +1,17 @@
 import json
-
-import torch
-from .embeddings_search import get_embeddings, rephrase_question
-from sentence_transformers import util
-import requests
-import json
-import openai
 import os
+import urllib.parse
+
+import openai
+import requests
+from sentence_transformers import util
+import torch
+
+from .embeddings_search import get_embeddings, rephrase_question
+
+
+DB_URL = "https://horde-qna-db.spevktator.io"
+GPT_MODEL = "gpt-3.5-turbo"
 
 openai.api_key = os.environ["OPENAI_API_KEY"]
 
@@ -56,7 +61,10 @@ def get_channel_question_embeddings(channel_ids):
 
 
 def get_channel_messages(channel_id):
-    url = f"https://horde-qna-db.spevktator.io/horde_support.json?sql=select+id%2C+content+from+messages+where+%22channel_id%22+%3D+%3Ap0+order+by+id+desc+limit+101&p0={channel_id}"
+    sql = "select id, content from messages where channel_id = :p0 order by id desc limit 101"
+    params = urllib.parse.urlencode({"sql": sql, "channel_id": channel_id})
+    url = f"{DB_URL}/horde_support.json?{params}"
+
     data = requests.get(url).json()
     messages = [d for d in data["rows"] if d[0] != channel_id]
     return messages
@@ -121,7 +129,7 @@ Include relevant urls if they are known
     ]
     return (
         openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
+            model=GPT_MODEL,
             messages=data,
             temperature=0,
             max_tokens=500,
@@ -162,11 +170,16 @@ if __name__ == "__main__":
 
 """
 channel_id = '1021208495414071307'
-url = 'https://horde-qna-db.spevktator.io/horde_support.json?sql=select+id%2C+content+from+messages+where+%22channel_id%22+%3D+%3Ap0+order+by+id+desc+limit+101&p0=1021208495414071307'
+url = (
+    'https://horde-qna-db.spevktator.io/horde_support.json?'
+    '?sql=select+id%2C+content+from+messages+where+%22channel_id%22+%3D+%3Ap0+order+by+id+desc+limit+101'
+    '&p0=1021208495414071307')
 data = requests.get(url).json()
 messages = [d[1] for d in data['rows']]
 #print(messages[0])
-question = 'What is the recommended method for joining the horde and contributing to the parallelization of GPU processing for the benefit of others?'
+question = (
+    'What is the recommended method for joining the horde and contributing to the parallelization'
+    ' of GPU processing for the benefit of others?')
 question_embedding = get_embeddings(question)
 embeddings = get_embeddings(messages)
 closest_n = util.semantic_search(question_embedding, embeddings, top_k=10)
