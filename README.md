@@ -32,7 +32,7 @@ Copy the example environment variables from `.env.sample` to `.env` and customiz
 Run the bot via:
 
 ```bash
-./bot.py
+python3 hordoc/bot.py
 ```
 
 ## Design

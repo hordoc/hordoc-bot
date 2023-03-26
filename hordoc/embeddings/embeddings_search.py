@@ -15,7 +15,7 @@ model = SentenceTransformer(EMBEDDINGS_MODEL)
 openai.api_key = os.environ["OPENAI_API_KEY"]
 
 
-def get_embeddings(text: list or str):
+def get_embeddings(text: list | str):
     return model.encode(text)
 
 

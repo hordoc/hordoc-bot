@@ -1,0 +1,11 @@
+[project]
+name = "hordoc"
+description = "the hordoc bot"
+version = "0.1.0"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = ["hordoc"]

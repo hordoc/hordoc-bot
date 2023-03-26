@@ -7,12 +7,12 @@ class WasAnswerUsefulView(discord.ui.View):
         self.answer = None
 
     @discord.ui.button(label="Yes", style=discord.ButtonStyle.green)
-    async def yes(self, button: discord.ui.Button, interaction: discord.Interaction):
+    async def yes(self, interaction: discord.Interaction, button: discord.ui.Button):
         self.answer = True
         self.stop()
 
     @discord.ui.button(label="No", style=discord.ButtonStyle.red)
-    async def no(self, button: discord.ui.Button, interaction: discord.Interaction):
+    async def no(self, interaction: discord.Interaction, button: discord.ui.Button):
         self.answer = False
         self.stop()
 
@@ -27,6 +27,6 @@ class SelectQuestionView(discord.ui.View):
 
     @discord.ui.select(options=select_options)
     async def select_question(
-        self, select: discord.ui.Select, interaction: discord.Interaction
+        self, interaction: discord.Interaction, select: discord.ui.Select
     ):
         self.stop()

@@ -4,7 +4,7 @@ from collections import Counter
 from dataclasses import asdict
 import os
 from pprint import pprint as pp
-from typing import Literal, Optional
+from typing import List, Literal, Optional, cast
 
 import discord
 from discord.ext.commands import Greedy, Context
@@ -12,11 +12,11 @@ from discord.ext import commands
 from dotenv import load_dotenv
 import sqlite_utils
 
-from embeddings.embeddings_search import (
+from hordoc.embeddings.embeddings_search import (
     find_most_similar_question,
     get_answer_for_question,
 )
-from data import (
+from hordoc.data import (
     GuildItem,
     ForumChannelItem,
     ThreadItem,
@@ -24,7 +24,7 @@ from data import (
     MessageItem,
     ensure_tables,
 )
-from views import AnswerView
+from hordoc.views import AnswerView
 
 load_dotenv()
 
@@ -47,7 +47,7 @@ db = sqlite_utils.Database(os.environ["DB_PATH"])
 
 
 async def scrape_guilds() -> Counter:
-    stats = Counter()
+    stats: Counter = Counter()
     seen_authors = set()
 
     async def scrape_thread(thread):
@@ -69,18 +69,22 @@ async def scrape_guilds() -> Counter:
             db["messages"].insert(asdict(m), pk="id", replace=True)
             stats["messages"] += 1
 
+    # Can this be done more efficiently without causing mypy to trip?
+    guilds_table = cast(sqlite_utils.db.Table, db.table("guilds"))
+    channels_table = cast(sqlite_utils.db.Table, db.table("channels"))
+
     guilds = [guild for guild in client.guilds if guild.id in guilds_ids]
     for guild in guilds:
         g = GuildItem.from_discord(guild)
         pp(g)
-        db["guilds"].insert(asdict(g), pk="id", replace=True)
+        guilds_table.insert(asdict(g), pk="id", replace=True)
         stats["guilds"] += 1
 
         forums = [channel for channel in guild.forums if channel.id in forums_ids]
         for forum in forums:
             f = ForumChannelItem.from_discord(forum)
             pp(f)
-            db["channels"].insert(asdict(f), pk="id", replace=True)
+            channels_table.insert(asdict(f), pk="id", replace=True)
             stats["forums"] += 1
             for thread in forum.threads:
                 await scrape_thread(thread)
@@ -142,7 +146,7 @@ async def question(interaction: discord.Interaction, question: str):
 @commands.is_owner()
 async def sync(
     ctx: Context,
-    guilds: Greedy[discord.Object],
+    guilds: Greedy[List[discord.Object]],
     spec: Optional[Literal["~", "*", "^"]] = None,
 ) -> None:
     if not guilds:
