@@ -10,6 +10,7 @@ datasette = "*"
 sentence_transformers = "*"
 python-dotenv = "*"
 openai = "*"
+click = "*"
 
 [dev-packages]
 black = "*"

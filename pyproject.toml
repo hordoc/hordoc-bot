@@ -17,6 +17,9 @@ mypy = [
   'types-requests',
 ]
 
+[project.scripts]
+hordoc = "hordoc.cli:cli"
+
 [build-system]
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
