@@ -2,5 +2,7 @@ __pycache__/
 .ipynb_checkpoints/
 .venv/
 
+hordoc.egg-info/
+
 .DS_Store
 .env

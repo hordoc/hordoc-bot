@@ -1,0 +1,39 @@
+name: Test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.9", "3.10"]
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    - uses: actions/cache@v3
+      name: Configure pip caching
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt', '**/Pipfile', '**/pyproject.toml') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-${{ matrix.python-version }}-
+    - name: Install dependencies
+      run: |
+        pip install -e '.[test,mypy,flake8]'
+    - name: Run tests
+      run: |
+        pytest -v
+    - name: run mypy
+      run: mypy hordoc tests
+    - name: run flake8
+      run: flake8
+    - name: Check formatting
+      run: black . --check

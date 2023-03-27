@@ -1,10 +1,13 @@
 import json
 import os
+from typing import Union
 
 from dotenv import load_dotenv
 from sentence_transformers import SentenceTransformer, util
 import torch
 import openai
+
+load_dotenv()
 
 EMBEDDINGS_MODEL = "sentence-transformers/gtr-t5-large"
 GPT_MODEL = "gpt-3.5-turbo"
@@ -15,7 +18,7 @@ model = SentenceTransformer(EMBEDDINGS_MODEL)
 openai.api_key = os.environ["OPENAI_API_KEY"]
 
 
-def get_embeddings(text: list or str):
+def get_embeddings(text: Union[list, str]):
     return model.encode(text)
 
 
@@ -84,8 +87,6 @@ def rephrase_question(question, text):
 
 
 if __name__ == "__main__":
-    load_dotenv("../.env")
-
     # URL TO GET ALL POSTS
     pass
     """
