@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from sentence_transformers import SentenceTransformer, util
 import torch
 import openai
+load_dotenv()
 
 EMBEDDINGS_MODEL = "sentence-transformers/gtr-t5-large"
 GPT_MODEL = "gpt-3.5-turbo"
@@ -85,7 +86,6 @@ def rephrase_question(question, text):
 
 
 if __name__ == "__main__":
-    load_dotenv("../.env")
 
     # URL TO GET ALL POSTS
     pass

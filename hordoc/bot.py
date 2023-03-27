@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
 from dotenv import load_dotenv
-load_dotenv()
-
-
-
 from collections import Counter
 from dataclasses import asdict
 import os
@@ -28,6 +24,7 @@ from hordoc.data import (
     ensure_tables,
 )
 from hordoc.views import AnswerView
+load_dotenv()
 
 
 intents = discord.Intents.default()
