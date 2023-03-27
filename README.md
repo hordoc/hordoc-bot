@@ -25,6 +25,12 @@ Install the Python dependencies, this will take a while:
 pip3 install -r requirements.txt
 ```
 
+Then install the HorDoc package :
+```bash
+pip3 install -e .
+```
+
+
 Copy the example environment variables from `.env.sample` to `.env` and customize them to your needs. These include your Discord authentication token, guild, forum and channel IDs and database filename.
 
 ## Usage
