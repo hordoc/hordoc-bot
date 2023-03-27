@@ -2,6 +2,7 @@
 name = "hordoc"
 description = "the hordoc bot"
 version = "0.1.0"
+dynamic = ["dependencies"]
 
 [project.optional-dependencies]
 test = [
@@ -21,3 +22,6 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
 py-modules = ["hordoc"]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
