@@ -4,7 +4,7 @@ from collections import Counter
 from dataclasses import asdict
 import os
 from pprint import pprint as pp
-from typing import List, Literal, Optional, cast
+from typing import Literal, Optional, cast
 
 import discord
 from discord.ext.commands import Greedy, Context
@@ -107,7 +107,7 @@ async def on_ready():
     # await client.close()
 
 
-@client.tree.command(name="question", description="Ask something !")
+@client.tree.command(name="question", description="Ask something !")  # type: ignore
 @discord.app_commands.describe(question="Your question")
 async def question(interaction: discord.Interaction, question: str):
     answer_certainty = 0.8
@@ -141,12 +141,12 @@ async def question(interaction: discord.Interaction, question: str):
         await interaction.followup.send(f"An error has occurred : {e}")
 
 
-@client.command()
+@client.command()  # type: ignore
 @commands.guild_only()
 @commands.is_owner()
 async def sync(
     ctx: Context,
-    guilds: Greedy[List[discord.Object]],
+    guilds: Greedy[discord.Object],
     spec: Optional[Literal["~", "*", "^"]] = None,
 ) -> None:
     if not guilds:
