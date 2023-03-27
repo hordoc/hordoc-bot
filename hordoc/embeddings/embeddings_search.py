@@ -1,5 +1,6 @@
 import json
 import os
+from typing import Union
 
 from dotenv import load_dotenv
 from sentence_transformers import SentenceTransformer, util
@@ -15,7 +16,7 @@ model = SentenceTransformer(EMBEDDINGS_MODEL)
 openai.api_key = os.environ["OPENAI_API_KEY"]
 
 
-def get_embeddings(text: list | str):
+def get_embeddings(text: Union[list, str]):
     return model.encode(text)
 
 
