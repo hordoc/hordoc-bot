@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+from dotenv import load_dotenv
+load_dotenv()
+
+
 
 from collections import Counter
 from dataclasses import asdict
@@ -9,7 +13,6 @@ from typing import Literal, Optional, cast
 import discord
 from discord.ext.commands import Greedy, Context
 from discord.ext import commands
-from dotenv import load_dotenv
 import sqlite_utils
 
 from hordoc.embeddings.embeddings_search import (
@@ -26,7 +29,6 @@ from hordoc.data import (
 )
 from hordoc.views import AnswerView
 
-load_dotenv()
 
 intents = discord.Intents.default()
 intents.message_content = True
