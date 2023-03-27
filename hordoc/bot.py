@@ -24,6 +24,7 @@ from hordoc.data import (
     ensure_tables,
 )
 from hordoc.views import AnswerView
+
 load_dotenv()
 
 

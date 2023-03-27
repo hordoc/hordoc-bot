@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from sentence_transformers import SentenceTransformer, util
 import torch
 import openai
+
 load_dotenv()
 
 EMBEDDINGS_MODEL = "sentence-transformers/gtr-t5-large"
@@ -86,7 +87,6 @@ def rephrase_question(question, text):
 
 
 if __name__ == "__main__":
-
     # URL TO GET ALL POSTS
     pass
     """
