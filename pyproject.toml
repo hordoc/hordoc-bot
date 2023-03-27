@@ -15,6 +15,7 @@ flake8 = [
 mypy = [
   'mypy',
   'types-requests',
+  'types-tabulate',
 ]
 
 [project.scripts]
