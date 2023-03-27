@@ -3,6 +3,18 @@ name = "hordoc"
 description = "the hordoc bot"
 version = "0.1.0"
 
+[project.optional-dependencies]
+test = [
+  'pytest',
+]
+flake8 = [
+  'black',
+  'flake8',
+]
+mypy = [
+  'mypy',
+]
+
 [build-system]
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"

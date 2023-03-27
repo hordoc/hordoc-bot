@@ -3,7 +3,7 @@
 
 # Setup project
 @init:
-  pipenv run pip install -e '.'
+  pipenv run pip install -e '.[test,flake8,mypy]'
 
 # Run pytest with supplied options
 @test *options:
