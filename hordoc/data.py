@@ -201,3 +201,42 @@ def ensure_tables(db):
                 ("author_id", "authors", "id"),
             ],
         )
+    if "message_embeddings" not in db.table_names():
+        db["message_embeddings"].create(
+            {
+                "id": int,
+                "embedding": "blob",
+            },
+            pk="id",
+            column_order=("id", "embedding"),
+            foreign_keys=[
+                ("id", "threads", "id"),
+            ],
+        )
+    if "rephrased_questions" not in db.table_names():
+        db["rephrased_questions"].create(
+            {
+                "id": int,
+                "rephrased": str,
+                "embedding": "blob",
+            },
+            pk="id",
+            column_order=("id", "rephrased", "embedding"),
+            foreign_keys=[
+                ("id", "threads", "id"),
+            ],
+        )
+    if "answers" not in db.table_names():
+        db["answers"].create(
+            {
+                "id": int,
+                "question": str,
+                "answer": str,
+                "messages": str,
+            },
+            pk="id",
+            column_order=("id", "question", "answer", "messages"),
+            foreign_keys=[
+                ("id", "threads", "id"),
+            ],
+        )
