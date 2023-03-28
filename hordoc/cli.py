@@ -141,7 +141,7 @@ def import_answers(db_path, json_file):
                     "id": item["id"],
                     "question": item["question"],
                     "answer": item["answer"],
-                    "messages": json.dumps(item["messages"]),
+                    "messages": json.dumps([msg[0] for msg in item["messages"]]),
                 }
                 for item in items
             ),
