@@ -16,7 +16,6 @@ SIMILARITY_THRESHOLD = 0.8
 
 dirname = os.path.dirname(__file__)
 model = SentenceTransformer(EMBEDDINGS_MODEL)
-openai.api_key = os.environ["OPENAI_API_KEY"]
 
 
 def decode(blob):
@@ -76,6 +75,9 @@ def get_answer_for_question(question):
 
 
 def rephrase_question(question, text):
+    if openai.api_key is None:
+        openai.api_key = os.environ["OPENAI_API_KEY"]
+
     prompt = f"""
     Title: {question}
     Content: {text}
