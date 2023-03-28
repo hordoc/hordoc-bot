@@ -1,6 +1,7 @@
 import json
 import os
 from typing import Union
+import struct
 
 from dotenv import load_dotenv
 from sentence_transformers import SentenceTransformer, util
@@ -16,6 +17,16 @@ SIMILARITY_THRESHOLD = 0.8
 dirname = os.path.dirname(__file__)
 model = SentenceTransformer(EMBEDDINGS_MODEL)
 openai.api_key = os.environ["OPENAI_API_KEY"]
+
+
+def decode(blob):
+    """Decode blob into vector of floats."""
+    return struct.unpack("f" * (len(blob) // 4), blob)
+
+
+def encode(vector):
+    """Encode vector of floats into blob."""
+    return struct.pack("f" * len(vector), *vector)
 
 
 def get_embeddings(text: Union[list, str]):
