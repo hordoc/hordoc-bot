@@ -36,13 +36,6 @@ guilds_ids = [int(guild_id) for guild_id in os.environ["DISCORD_GUILD_IDS"].spli
 forums_ids = [int(forum_id) for forum_id in os.environ["DISCORD_FORUM_IDS"].split(",")]
 status_channel_id = int(os.environ["DISCORD_STATUS_CHANNEL_ID"])
 
-assert len(guilds_ids), "Missing DISCORD_GUILD_IDS"
-assert len(forums_ids), "Missing DISCORD_FORUM_IDS"
-
-print(f"Guilds: {guilds_ids}")
-print(f"Forums: {forums_ids}")
-print(f"Status Channel: {status_channel_id}")
-
 db = sqlite_utils.Database(os.environ["DB_PATH"])
 
 
@@ -180,5 +173,12 @@ async def sync(
 
 
 if __name__ == "__main__":
+    assert len(guilds_ids), "Missing DISCORD_GUILD_IDS"
+    assert len(forums_ids), "Missing DISCORD_FORUM_IDS"
+
+    print(f"Guilds: {guilds_ids}")
+    print(f"Forums: {forums_ids}")
+    print(f"Status Channel: {status_channel_id}")
+
     ensure_tables(db)
     client.run(os.environ["DISCORD_SECRET"])
