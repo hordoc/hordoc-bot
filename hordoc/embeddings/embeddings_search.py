@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 import json
 import os
-from typing import List, Union
+from typing import Dict, List, Union
 import struct
 
 from dotenv import load_dotenv
@@ -72,7 +72,9 @@ def load_embeddings_from_json(index_file: str) -> EmbeddingsIdx:
     return idx
 
 
-def find_most_similar_questions(idx: EmbeddingsIdx, question: str, top_k=5):
+def find_most_similar_questions(
+    idx: EmbeddingsIdx, question: str, top_k=5
+) -> List[Dict]:
     closest_n = util.semantic_search(
         get_embeddings(question), idx.embeddings, top_k=top_k
     )[0]
