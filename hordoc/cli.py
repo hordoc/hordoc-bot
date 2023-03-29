@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 
 import json
-import os
 
 from dotenv import load_dotenv
 import click
 import sqlite_utils
 from tabulate import tabulate
 
-from hordoc.bot import client
+from hordoc.bot import run_bot
 from hordoc.data import ensure_tables
 from hordoc.embeddings.embeddings_search import encode
 
@@ -34,7 +33,7 @@ def bot(db_path):
     "Run the HorDoc Discord bot"
     db = sqlite_utils.Database(db_path)
     ensure_tables(db)
-    client.run(os.environ["DISCORD_SECRET"])
+    run_bot(db)
 
 
 @cli.command()
