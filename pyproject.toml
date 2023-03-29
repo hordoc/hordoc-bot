@@ -15,7 +15,11 @@ flake8 = [
 mypy = [
   'mypy',
   'types-requests',
+  'types-tabulate',
 ]
+
+[project.scripts]
+hordoc = "hordoc.cli:cli"
 
 [build-system]
 requires = ["setuptools"]

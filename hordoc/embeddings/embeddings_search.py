@@ -1,6 +1,8 @@
+from dataclasses import dataclass
 import json
 import os
-from typing import Union
+from typing import Dict, List, Union
+import struct
 
 from dotenv import load_dotenv
 from sentence_transformers import SentenceTransformer, util
@@ -15,7 +17,22 @@ SIMILARITY_THRESHOLD = 0.8
 
 dirname = os.path.dirname(__file__)
 model = SentenceTransformer(EMBEDDINGS_MODEL)
-openai.api_key = os.environ["OPENAI_API_KEY"]
+
+
+@dataclass
+class EmbeddingsIdx:
+    embeddings: List[torch.Tensor]
+    ids: List[int]
+
+
+def decode(blob):
+    """Decode blob into vector of floats."""
+    return struct.unpack("f" * (len(blob) // 4), blob)
+
+
+def encode(vector):
+    """Encode vector of floats into blob."""
+    return struct.pack("f" * len(vector), *vector)
 
 
 def get_embeddings(text: Union[list, str]):
@@ -34,37 +51,43 @@ def find_most_similar(text, corpus, top_k=5):
     return closest_n
 
 
-def find_most_similar_question(question):
-    with open(os.path.join(dirname, "rephrased.json")) as f:
-        rephrased = json.loads(f.read())
-        embeddings = [torch.tensor(r["embeddings"]) for r in rephrased]
-        closest_n = util.semantic_search(get_embeddings(question), embeddings, top_k=5)[
-            0
-        ]
-        if closest_n:
-            ids = [{"id": r["corpus_id"], "score": r["score"]} for r in closest_n]
-            data = [
-                {"text": rephrased[i["id"]]["rephrased"], "score": i["score"]}
-                for i in ids
-            ]
-            print("data", data)
-            return data
-        return []
-
-
-def get_answer_for_question(question):
-    with open(os.path.join(dirname, "answers.json")) as f:
-        d = json.loads(f.read())
-        for row in d:
-            print(row["question"], question)
-            if row["question"] == question:
-                return row["answer"]
-        return (
-            "Sorry, I don't know the answer to that question. Try asking in the forum."
+def load_embeddings_from_db(db) -> EmbeddingsIdx:
+    with db.conn:
+        rephrased = db.query("select id, embedding from rephrased_questions")
+        rephrased = list(rephrased)
+        idx = EmbeddingsIdx(
+            [torch.tensor(decode(r["embedding"])) for r in rephrased],
+            [r["id"] for r in rephrased],
         )
+        return idx
+
+
+def load_embeddings_from_json(index_file: str) -> EmbeddingsIdx:
+    with open(os.path.join(dirname, index_file)) as f:
+        rephrased = json.loads(f.read())
+        idx = EmbeddingsIdx(
+            [torch.tensor(r["embeddings"]) for r in rephrased],
+            [r["id"] for r in rephrased],
+        )
+    return idx
+
+
+def find_most_similar_questions(
+    idx: EmbeddingsIdx, question: str, top_k=5
+) -> List[Dict]:
+    closest_n = util.semantic_search(
+        get_embeddings(question), idx.embeddings, top_k=top_k
+    )[0]
+    if closest_n:
+        ids = [{"id": idx.ids[r["corpus_id"]], "score": r["score"]} for r in closest_n]
+        return ids
+    return []
 
 
 def rephrase_question(question, text):
+    if openai.api_key is None:
+        openai.api_key = os.environ["OPENAI_API_KEY"]
+
     prompt = f"""
     Title: {question}
     Content: {text}

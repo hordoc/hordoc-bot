@@ -4,3 +4,4 @@ datasette
 sentence_transformers
 python-dotenv
 openai
+click

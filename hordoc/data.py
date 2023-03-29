@@ -1,7 +1,9 @@
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Dict, List, cast
 
 import discord
+import sqlite_utils
 
 
 def dt_to_ms(dt: datetime) -> int:
@@ -135,69 +137,124 @@ class MessageItem:
         )
 
 
-def ensure_tables(db):
+def find_answer_by_id(db: sqlite_utils.Database, id: int) -> str:
+    rows = db.query("select answer from answers where id = :id", {"id": id})
+    return next(rows)["answer"]
+
+
+def find_rephrased_questions_by_ids(
+    db: sqlite_utils.Database, ids: List[int]
+) -> Dict[int, str]:
+    rows = db.query(
+        "select id, rephrased from rephrased_questions where id in (%s)"
+        % (",".join("?" * len(ids))),
+        ids,
+    )
+    return {r["id"]: r["rephrased"] for r in rows}
+
+
+def _ensure_table(db: sqlite_utils.Database, table_name: str, *args, **kwargs):
+    if table_name not in db.table_names():
+        table = cast(sqlite_utils.db.Table, db.table(table_name))
+        table.create(*args, **kwargs)
+
+
+def ensure_tables(db: sqlite_utils.Database):
     # Create tables manually, because if we create them automatically
     # we may create items without 'title' first, which breaks
     # when we later call ensure_fts()
-    if "guilds" not in db.table_names():
-        db["guilds"].create(
-            {
-                "id": int,
-                "name": str,
-            },
-            pk="id",
-            column_order=("id", "name"),
-        )
-    if "channels" not in db.table_names():
-        # Can be forum channel or text channel
-        db["channels"].create(
-            {
-                "id": int,
-                "guild_id": int,
-                "name": str,
-                "type": str,
-            },
-            pk="id",
-            column_order=("id", "guild_id", "name", "type"),
-            foreign_keys=[("guild_id", "guilds", "id")],
-        )
-    if "authors" not in db.table_names():
-        db["authors"].create(
-            {
-                "id": int,
-                "name": str,
-                "discriminator": str,
-            },
-            pk="id",
-            column_order=("id", "name", "discriminator"),
-        )
-    if "threads" not in db.table_names():
-        db["threads"].create(
-            {
-                "id": int,
-                "parent_id": int,
-                "owner_id": int,
-                "name": str,
-            },
-            pk="id",
-            column_order=("id", "parent_id", "owner_id", "name"),
-            foreign_keys=[
-                ("parent_id", "channels", "id"),
-                ("owner_id", "authors", "id"),
-            ],
-        )
-    if "messages" not in db.table_names():
-        db["messages"].create(
-            {
-                "id": int,
-                "channel_id": int,
-                "created_at": int,
-                "author_id": int,
-                "content": str,
-            },
-            pk="id",
-            column_order=("id", "channel_id", "name"),
-            foreign_keys=[
-                ("author_id", "authors", "id"),
-            ],
-        )
+    _ensure_table(
+        db,
+        "guilds",
+        {
+            "id": int,
+            "name": str,
+        },
+        pk="id",
+        column_order=["id", "name"],
+    )
+    _ensure_table(
+        db,
+        "channels",
+        {
+            "id": int,
+            "guild_id": int,
+            "name": str,
+            "type": str,
+        },
+        pk="id",
+        column_order=["id", "guild_id", "name", "type"],
+        foreign_keys=[("guild_id", "guilds", "id")],
+    )
+    _ensure_table(
+        db,
+        "authors",
+        {
+            "id": int,
+            "name": str,
+            "discriminator": str,
+        },
+        pk="id",
+        column_order=["id", "name", "discriminator"],
+    )
+    _ensure_table(
+        db,
+        "threads",
+        {
+            "id": int,
+            "parent_id": int,
+            "owner_id": int,
+            "name": str,
+        },
+        pk="id",
+        column_order=["id", "parent_id", "owner_id", "name"],
+        foreign_keys=[
+            ("parent_id", "channels", "id"),
+            ("owner_id", "authors", "id"),
+        ],
+    )
+    _ensure_table(
+        db,
+        "messages",
+        {
+            "id": int,
+            "channel_id": int,
+            "created_at": int,
+            "author_id": int,
+            "content": str,
+        },
+        pk="id",
+        column_order=["id", "channel_id", "name"],
+        foreign_keys=[
+            ("author_id", "authors", "id"),
+        ],
+    )
+    _ensure_table(
+        db,
+        "rephrased_questions",
+        {
+            "id": int,
+            "rephrased": str,
+            "embedding": "blob",
+        },
+        pk="id",
+        column_order=["id", "rephrased", "embedding"],
+        foreign_keys=[
+            ("id", "threads", "id"),
+        ],
+    )
+    _ensure_table(
+        db,
+        "answers",
+        {
+            "id": int,
+            "question": str,
+            "answer": str,
+            "messages": str,
+        },
+        pk="id",
+        column_order=["id", "question", "answer", "messages"],
+        foreign_keys=[
+            ("id", "threads", "id"),
+        ],
+    )

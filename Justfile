@@ -9,11 +9,11 @@
 @test *options:
   pipenv run pytest {{options}}
 
-# Run linters: black, flake8, mypy
+# Run linters: flake8, mypy, black
 @lint:
-  pipenv run black . --check
   pipenv run flake8
   pipenv run mypy hordoc tests
+  pipenv run black . --check
 
 # Apply Black
 @black:
