@@ -9,7 +9,12 @@ from tabulate import tabulate
 
 from hordoc.bot import run_bot
 from hordoc.data import ensure_tables
-from hordoc.embeddings.embeddings_search import encode
+from hordoc.embeddings.embeddings_search import (
+    encode,
+    load_embeddings_from_db,
+    find_most_similar_questions,
+)
+
 
 load_dotenv()
 
@@ -48,38 +53,6 @@ def install(db_path):
     click.echo(f"Creating tables in '{db_path}' ...")
     ensure_tables(db)
     click.echo("Installation completed.")
-
-
-@cli.command()
-@click.argument(
-    "db_path",
-    type=click.Path(file_okay=True, dir_okay=False, allow_dash=False),
-    required=True,
-)
-@click.argument(
-    "json_file",
-    type=click.Path(file_okay=True, dir_okay=False, allow_dash=False),
-    required=True,
-)
-def import_embeddings(db_path, json_file):
-    "Import embeddings JSON into the database"
-    db = sqlite_utils.Database(db_path)
-    ensure_tables(db)
-
-    with open(json_file) as f:
-        items = json.loads(f.read())
-
-        db["message_embeddings"].insert_all(
-            (
-                {
-                    "id": item["id"],
-                    "embedding": encode(item["embeddings"]),
-                }
-                for item in items
-            ),
-            batch_size=100,
-            replace=True,
-        )
 
 
 @cli.command()
@@ -147,6 +120,60 @@ def import_answers(db_path, json_file):
             batch_size=100,
             replace=True,
         )
+
+
+@cli.command()
+@click.argument(
+    "db_path",
+    type=click.Path(file_okay=True, dir_okay=False, allow_dash=False),
+    required=True,
+)
+@click.argument(
+    "question",
+    type=str,
+    required=True,
+)
+@click.option("--top-k", "-k", type=int, default=5, show_default=True)
+@click.option("--answer-certainty", "-c", type=float, default=0.75, show_default=True)
+def answer_question(db_path, question, top_k, answer_certainty):
+    "Try to answer a question"
+    db = sqlite_utils.Database(db_path)
+    ensure_tables(db)
+
+    # idx = load_embeddings_from_json("rephrased.json")
+    click.echo("Loading embeddings index...")
+    idx = load_embeddings_from_db(db)
+    click.echo(f"{len(idx.embeddings)} embeddings loaded")
+
+    click.echo(f"answer_certainty={answer_certainty} top_k={top_k}")
+    click.echo(f"Question: {question}")
+    questions = find_most_similar_questions(idx, question, top_k=top_k)
+    if questions:
+        click.echo("\nThe most similar questions are:\n---")
+
+        # lookup rephrased questions in DB
+        ids = [q["id"] for q in questions]
+        rows = db.query(
+            "select id, rephrased from rephrased_questions where id in (%s)"
+            % (",".join("?" * len(ids))),
+            ids,
+        )
+        rephrased = {r["id"]: r["rephrased"] for r in rows}
+
+        for q in questions:
+            click.echo(
+                f"#{q['id']} (score {round(q['score'] * 100)}%) {rephrased[q['id']]}"
+            )
+
+        click.echo("\nThe selected answer is:\n---")
+        if questions[0]["score"] > 0.75:
+            # lookup answer in DB
+            rows = db.query("select answer from answers where id = :id", questions[0])
+            click.echo(next(rows)["answer"])
+        else:
+            click.echo(
+                "Sorry, didn't find any close questions to derrive the answer from"
+            )
 
 
 @cli.command()
