@@ -1,6 +1,10 @@
 # HorDoc: AI-Powered Discord Community Support
 
-[![Python](https://img.shields.io/badge/python-3.8%20%7C%203.9%20%7C%203.10-blue)](https://www.python.org/)
+[![Python 3.x](https://img.shields.io/badge/python-3.8%20%7C%203.9%20%7C%203.10-blue)](https://www.python.org/)
+[![Tests](https://github.com/hordoc/hordoc-bot/workflows/Test/badge.svg)](https://github.com/hordoc/hordoc-bot/actions?query=workflow%3ATest)
+[![License](https://img.shields.io/badge/license-AGPL%20v3-blue.svg)](https://github.com/hordoc/hordoc-bot/blob/main/LICENSE)
+[![Discord](https://img.shields.io/discord/1082318105461669988?label=discord)](https://discord.gg/RZCX6jxygK)
+
 
 Public Discord communities struggle to quickly and accurately answer user questions, especially with a constant flow of new users asking the same questions repeatedly.
 
@@ -141,7 +145,10 @@ And to list all available commands:
 just -l
 ```
 
-## Team
-[All-Ki](https://github.com/All-Ki) & [MischaU8](https://github.com/MischaU8)
+## Community
+
+If you have any questions or feedback, join us on [Discord](https://discord.gg/RZCX6jxygK)
+
+Developers: [All-Ki](https://github.com/All-Ki) & [MischaU8](https://github.com/MischaU8)
 
 This project is sponsored by the [AI Horde](https://aihorde.net/)
