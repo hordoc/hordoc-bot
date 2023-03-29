@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-from dotenv import load_dotenv
 import os
 from typing import List, Optional
 
@@ -8,9 +7,6 @@ from discord.ext import commands
 import sqlite_utils
 
 from hordoc.cogs import questions, scraper
-from hordoc.data import (
-    ensure_tables,
-)
 
 
 class HorDocBot(commands.Bot):
@@ -102,11 +98,3 @@ def run_bot(db):
         intents=intents,
     )
     client.run(os.environ["DISCORD_SECRET"])
-
-
-if __name__ == "__main__":
-    load_dotenv()
-
-    db = sqlite_utils.Database(os.environ["DB_PATH"])
-    ensure_tables(db)
-    run_bot(db)
