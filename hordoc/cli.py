@@ -8,7 +8,11 @@ import sqlite_utils
 from tabulate import tabulate
 
 from hordoc.bot import run_bot
-from hordoc.data import ensure_tables
+from hordoc.data import (
+    ensure_tables,
+    find_answer_by_id,
+    find_rephrased_questions_by_ids,
+)
 from hordoc.embeddings.embeddings_search import (
     encode,
     load_embeddings_from_db,
@@ -153,12 +157,7 @@ def answer_question(db_path, question, top_k, answer_certainty):
 
         # lookup rephrased questions in DB
         ids = [q["id"] for q in questions]
-        rows = db.query(
-            "select id, rephrased from rephrased_questions where id in (%s)"
-            % (",".join("?" * len(ids))),
-            ids,
-        )
-        rephrased = {r["id"]: r["rephrased"] for r in rows}
+        rephrased = find_rephrased_questions_by_ids(db, ids)
 
         for q in questions:
             click.echo(
@@ -168,8 +167,8 @@ def answer_question(db_path, question, top_k, answer_certainty):
         click.echo("\nThe selected answer is:\n---")
         if questions[0]["score"] > 0.75:
             # lookup answer in DB
-            rows = db.query("select answer from answers where id = :id", questions[0])
-            click.echo(next(rows)["answer"])
+            answer = find_answer_by_id(db, questions[0]["id"])
+            click.echo(answer)
         else:
             click.echo(
                 "Sorry, didn't find any close questions to derrive the answer from"

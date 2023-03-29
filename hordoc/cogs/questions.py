@@ -1,6 +1,10 @@
 import discord
 from discord.ext import commands
 
+from hordoc.data import (
+    find_answer_by_id,
+    find_rephrased_questions_by_ids,
+)
 from hordoc.embeddings.embeddings_search import (
     load_embeddings_from_db,
     find_most_similar_questions,
@@ -27,11 +31,7 @@ class Questions(commands.Cog):
             qs = find_most_similar_questions(self.idx, question)
 
             if qs[0]["score"] > answer_certainty:
-                # TODO move to data module
-                rows = self.bot.db.query(
-                    "select answer from answers where id = :id", qs[0]["id"]
-                )
-                a = next(rows)["answer"]
+                a = find_answer_by_id(self.bot.db, qs[0]["id"])
                 await interaction.followup.send(
                     "Your question was : "
                     + question
@@ -49,14 +49,8 @@ class Questions(commands.Cog):
                     + "\nThe most similar questions are :  \n\n"
                 )
 
-                # TODO move to data module
                 ids = [q["id"] for q in qs]
-                rows = self.bot.db.query(
-                    "select id, rephrased from rephrased_questions where id in (%s)"
-                    % (",".join("?" * len(ids))),
-                    ids,
-                )
-                rephrased = {r["id"]: r["rephrased"] for r in rows}
+                rephrased = find_rephrased_questions_by_ids(self.bot.db, ids)
 
                 for i, q in enumerate(qs):
                     score_pct = round(q["score"] * 100)
