@@ -1,7 +1,7 @@
 from collections import Counter
 from dataclasses import asdict
 from pprint import pprint as pp
-from typing import List, Optional
+from typing import List, Optional, Set
 
 import discord
 from discord.ext import commands
@@ -32,7 +32,7 @@ class Scraper(commands.Cog):
         self.guild_ids = guild_ids
         self.forum_ids = forum_ids
         self.stats: Counter = Counter()
-        self.seen_authors: set[int] = set()
+        self.seen_authors: Set[int] = set()
 
     async def scrape_thread(
         self, thread: discord.Thread, after_msg_id: Optional[int] = None
