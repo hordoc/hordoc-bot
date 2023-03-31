@@ -1,11 +1,12 @@
 from dataclasses import dataclass
 import json
 import os
-from typing import Dict, List, Union
+from typing import Any, Dict, List, Tuple, Union, cast
 import struct
 
 from dotenv import load_dotenv
 from sentence_transformers import SentenceTransformer, util
+import sqlite_utils
 import torch
 import openai
 
@@ -25,22 +26,24 @@ class EmbeddingsIdx:
     ids: List[int]
 
 
-def decode(blob):
+def decode(blob: bytes) -> Tuple[float]:
     """Decode blob into vector of floats."""
-    return struct.unpack("f" * (len(blob) // 4), blob)
+    return cast(Tuple[float], struct.unpack("f" * (len(blob) // 4), blob))
 
 
-def encode(vector):
+def encode(vector: List[float]) -> bytes:
     """Encode vector of floats into blob."""
     return struct.pack("f" * len(vector), *vector)
 
 
-def get_embeddings(text: Union[list, str]):
+def get_embeddings(text: Union[list, str]) -> Union[List[torch.Tensor], torch.Tensor]:
     return model.encode(text)
 
 
 # unused
-def find_most_similar(text, corpus, top_k=5):
+def find_most_similar(
+    text: str, corpus: Union[list, str], top_k: int = 5
+) -> List[List[Dict[str, Any]]]:
     corpus_embeddings = get_embeddings(corpus)
     query_embedding = get_embeddings([text])
     closest_n = util.semantic_search(query_embedding, corpus_embeddings, top_k=top_k)
@@ -51,10 +54,9 @@ def find_most_similar(text, corpus, top_k=5):
     return closest_n
 
 
-def load_embeddings_from_db(db) -> EmbeddingsIdx:
+def load_embeddings_from_db(db: sqlite_utils.Database) -> EmbeddingsIdx:
     with db.conn:
-        rephrased = db.query("select id, embedding from rephrased_questions")
-        rephrased = list(rephrased)
+        rephrased = list(db.query("select id, embedding from rephrased_questions"))
         idx = EmbeddingsIdx(
             [torch.tensor(decode(r["embedding"])) for r in rephrased],
             [r["id"] for r in rephrased],
@@ -73,7 +75,7 @@ def load_embeddings_from_json(index_file: str) -> EmbeddingsIdx:
 
 
 def find_most_similar_questions(
-    idx: EmbeddingsIdx, question: str, top_k=5
+    idx: EmbeddingsIdx, question: str, top_k: int = 5
 ) -> List[Dict]:
     closest_n = util.semantic_search(
         get_embeddings(question), idx.embeddings, top_k=top_k
@@ -84,7 +86,7 @@ def find_most_similar_questions(
     return []
 
 
-def rephrase_question(question, text):
+def rephrase_question(question: str, text: str) -> str:
     if openai.api_key is None:
         openai.api_key = os.environ["OPENAI_API_KEY"]
 
@@ -97,7 +99,7 @@ def rephrase_question(question, text):
         {"role": "system", "content": "Execute the following task :"},
         {"role": "user", "content": prompt},
     ]
-    return (
+    return str(
         openai.ChatCompletion.create(
             model=GPT_MODEL,
             messages=data,

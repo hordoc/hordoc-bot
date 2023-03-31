@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import discord
 import sqlite_utils
@@ -96,7 +96,7 @@ class AuthorItem:
     discriminator: str
 
     @staticmethod
-    def from_discord(a: discord.Member) -> "AuthorItem":
+    def from_discord(a: Union[discord.User, discord.Member]) -> "AuthorItem":
         """
         Create a MemberItem from a `discord.Member`.
         """
@@ -162,7 +162,7 @@ def log_questions(
     answer: Optional[str],
     score: Optional[float],
     timestamp: Optional[int] = None,
-):
+) -> None:
     if timestamp is None:
         timestamp = dt_to_ms(datetime.utcnow())
     Table(db, "log_questions").insert(
@@ -184,7 +184,7 @@ def log_questions_feedback(
     user_id: str,
     feedback: str,
     timestamp: Optional[int] = None,
-):
+) -> None:
     if timestamp is None:
         timestamp = dt_to_ms(datetime.utcnow())
     Table(db, "log_questions_feedback").insert(
@@ -198,12 +198,14 @@ def log_questions_feedback(
     )
 
 
-def _ensure_table(db: sqlite_utils.Database, table_name: str, *args, **kwargs):
+def _ensure_table(
+    db: sqlite_utils.Database, table_name: str, *args: Any, **kwargs: Any
+) -> None:
     if table_name not in db.table_names():
         Table(db, table_name).create(*args, **kwargs)
 
 
-def ensure_tables(db: sqlite_utils.Database):
+def ensure_tables(db: sqlite_utils.Database) -> None:
     # Create tables manually, because if we create them automatically
     # we may create items without 'title' first, which breaks
     # when we later call ensure_fts()

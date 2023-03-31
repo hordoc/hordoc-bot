@@ -1,5 +1,5 @@
 import os
-from typing import List, Optional
+from typing import Any, List, Optional
 
 import discord
 from discord.ext import commands
@@ -13,20 +13,18 @@ class HorDocBot(commands.Bot):
 
     def __init__(
         self,
-        *args,
+        *args: Any,
         # initial_extensions: List[str],
         db: sqlite_utils.Database,
         guilds_ids: List[int],
         forums_ids: List[int],
-        status_channel_id: List[int],
         testing_guild_id: Optional[int] = None,
-        **kwargs,
+        **kwargs: Any,
     ):
         super().__init__(*args, **kwargs)
         self.db = db
         self.guilds_ids = guilds_ids
         self.forums_ids = forums_ids
-        self.status_channel_id = status_channel_id
         self.testing_guild_id = testing_guild_id
         # self.initial_extensions = initial_extensions
 
@@ -67,14 +65,13 @@ class HorDocBot(commands.Bot):
         # load anything that should be in memory prior to handling events.
 
 
-def run_bot(db):
+def run_bot(db: sqlite_utils.Database) -> None:
     guilds_ids = [
         int(guild_id) for guild_id in os.environ["DISCORD_GUILD_IDS"].split(",")
     ]
     forums_ids = [
         int(forum_id) for forum_id in os.environ["DISCORD_FORUM_IDS"].split(",")
     ]
-    status_channel_id = int(os.environ["DISCORD_STATUS_CHANNEL_ID"])
     testing_guild_id = int(os.environ["DISCORD_TESTING_GUILD_ID"])
 
     assert len(guilds_ids), "Missing DISCORD_GUILD_IDS"
@@ -82,7 +79,6 @@ def run_bot(db):
 
     print(f"Guilds: {guilds_ids}")
     print(f"Forums: {forums_ids}")
-    print(f"Status Channel: {status_channel_id}")
 
     intents = discord.Intents.default()
     intents.message_content = True
@@ -91,7 +87,6 @@ def run_bot(db):
         db=db,
         guilds_ids=guilds_ids,
         forums_ids=forums_ids,
-        status_channel_id=status_channel_id,
         testing_guild_id=testing_guild_id,
         command_prefix="!",
         intents=intents,

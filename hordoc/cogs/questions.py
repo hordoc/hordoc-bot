@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 
+from hordoc.bot import HorDocBot
 from hordoc.data import (
     find_answer_by_id,
     # find_rephrased_questions_by_ids,
@@ -19,7 +20,7 @@ class Questions(commands.Cog):
     Answers support questions.
     """
 
-    def __init__(self, bot):
+    def __init__(self, bot: HorDocBot):
         self.bot = bot
         self.idx = load_embeddings_from_db(bot.db)
 
