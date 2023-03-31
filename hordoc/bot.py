@@ -16,15 +16,15 @@ class HorDocBot(commands.Bot):
         *args: Any,
         # initial_extensions: List[str],
         db: sqlite_utils.Database,
-        guilds_ids: List[int],
-        forums_ids: List[int],
+        guild_ids: List[int],
+        forum_ids: List[int],
         testing_guild_id: Optional[int] = None,
         **kwargs: Any,
     ):
         super().__init__(*args, **kwargs)
         self.db = db
-        self.guilds_ids = guilds_ids
-        self.forums_ids = forums_ids
+        self.guild_ids = guild_ids
+        self.forum_ids = forum_ids
         self.testing_guild_id = testing_guild_id
         # self.initial_extensions = initial_extensions
 
@@ -37,8 +37,10 @@ class HorDocBot(commands.Bot):
         # XXX We don't need Sync for now as we will self-register in the testing guild
         # await self.add_cog(sync.Sync(self))
 
-        await self.add_cog(questions.Questions(self))
-        await self.add_cog(scraper.Scraper(self))
+        await self.add_cog(questions.Questions(self, self.db))
+        await self.add_cog(
+            scraper.Scraper(self, self.db, self.guild_ids, self.forum_ids)
+        )
 
         # In overriding setup hook,
         # we can do things that require a bot prior to starting to process events from the websocket.
@@ -66,27 +68,27 @@ class HorDocBot(commands.Bot):
 
 
 def run_bot(db: sqlite_utils.Database) -> None:
-    guilds_ids = [
+    guild_ids = [
         int(guild_id) for guild_id in os.environ["DISCORD_GUILD_IDS"].split(",")
     ]
-    forums_ids = [
+    forum_ids = [
         int(forum_id) for forum_id in os.environ["DISCORD_FORUM_IDS"].split(",")
     ]
     testing_guild_id = int(os.environ["DISCORD_TESTING_GUILD_ID"])
 
-    assert len(guilds_ids), "Missing DISCORD_GUILD_IDS"
-    assert len(forums_ids), "Missing DISCORD_FORUM_IDS"
+    assert len(guild_ids), "Missing DISCORD_GUILD_IDS"
+    assert len(forum_ids), "Missing DISCORD_FORUM_IDS"
 
-    print(f"Guilds: {guilds_ids}")
-    print(f"Forums: {forums_ids}")
+    print(f"Guilds: {guild_ids}")
+    print(f"Forums: {forum_ids}")
 
     intents = discord.Intents.default()
     intents.message_content = True
     client = HorDocBot(
         # initial_extensions=[],
         db=db,
-        guilds_ids=guilds_ids,
-        forums_ids=forums_ids,
+        guild_ids=guild_ids,
+        forum_ids=forum_ids,
         testing_guild_id=testing_guild_id,
         command_prefix="!",
         intents=intents,
