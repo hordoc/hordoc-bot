@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Dict, List, Optional
-from uuid import uuid4
 
 import discord
 import sqlite_utils
@@ -180,6 +179,7 @@ def log_questions(
 
 def log_questions_feedback(
     db: sqlite_utils.Database,
+    id: int,
     question_id: int,
     user_id: str,
     feedback: str,
@@ -189,7 +189,7 @@ def log_questions_feedback(
         timestamp = dt_to_ms(datetime.utcnow())
     Table(db, "log_questions_feedback").insert(
         {
-            "id": str(uuid4()),
+            "id": id,
             "question_id": question_id,
             "timestamp": timestamp,
             "user_id": user_id,
@@ -319,7 +319,7 @@ def ensure_tables(db: sqlite_utils.Database):
         db,
         "log_questions_feedback",
         {
-            "id": str,
+            "id": int,
             "question_id": int,
             "timestamp": int,
             "user_id": str,
