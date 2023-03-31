@@ -32,6 +32,8 @@ class Questions(commands.Cog):
         qs = find_most_similar_questions(self.idx, question)
         # TODO check that we got atleast 1 question
         score = qs[0]["score"]
+        score_pct = round(score * 100)
+
         # answer_certainty = 0.8
         # if qs[0]["score"] > answer_certainty:
         answer = find_answer_by_id(self.bot.db, qs[0]["id"])
@@ -39,10 +41,13 @@ class Questions(commands.Cog):
             self.bot.db, interaction.id, str(interaction.user), question, answer, score
         )
 
-        async def answer_view_callback(feedback_interaction, feedback):
+        async def answer_view_callback(
+            feedback_interaction: discord.Interaction, feedback: str
+        ) -> None:
             print(f"The feedback by {feedback_interaction.user} was {feedback}")
             log_questions_feedback(
                 self.bot.db,
+                feedback_interaction.id,
                 interaction.id,
                 str(feedback_interaction.user),
                 feedback,
@@ -50,11 +55,7 @@ class Questions(commands.Cog):
 
         view = AnswerView.WasAnswerUsefulView(answer_view_callback, timeout=3600.0)
         await interaction.followup.send(
-            "Question: "
-            + str(question)
-            + "\n\nAnswer: "
-            + str(answer)
-            + "\n\nWas this answer useful?",
+            f"Question: {question}\n\nAnswer (score {score_pct}%): {answer}\n\nWas this answer useful?",
             suppress_embeds=True,
             view=view,
         )
