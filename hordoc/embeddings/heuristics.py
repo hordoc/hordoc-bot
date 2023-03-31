@@ -11,14 +11,15 @@ def print_and_buffer(txt, buffer):
 	print(txt)
 	return buffer + txt + '\n'
 
+guild_id = 781145214752129095
 time_delta_milliseconds = 1000 * 60 * 60 # 1 hour
-score_threshold = 0.8
+score_threshold = 0.5
 def get_messages_with_thanks_and_reply (db: Database):
 	excluded_users = ('db0','Airic')
 	query = f"""
 	select chan_id, msg_id, uid, t, user, msg, r
 	from horde_help
-	where "msg" like "%thanks%"
+	where "msg" like "%thank%"
 	and ("r" is not null and "r" != "")
 	and "user" not in  {str(excluded_users)}
 	order by msg_id"""
@@ -52,6 +53,7 @@ def get_messages_by_time_delta_and_uid (db: Database, start_time, delta, uid, ch
 	and t >= {start_time - delta}
 	and uid = {uid}
 	and chan_id = {channel_id}
+	and msg like '%?%'
 	order by msg_id"""
 	return db.execute_returning_dicts(query)
 
@@ -76,11 +78,12 @@ if __name__ == '__main__' :
 		if(len(most_similars) == 0):
 			continue
 		most_similar_messages = [{'msg' : asker_messages[m['corpus_id']] , 'score' : floor( m['score'] * 100)}  for m in most_similars]
-		txt = print_and_buffer('Thanks message : ' + message['msg'],txt)
-		txt = print_and_buffer( 'Reply : ' + reply['msg'],txt)
-		most_similar_messages_text = [m['msg']['msg'] +' '+ str(m['score']) + '%' for m in most_similar_messages]
-		txt = print_and_buffer('Found possible questions :' +  str(most_similar_messages_text),txt)
+		txt = print_and_buffer(f"LINK  : https://discord.com/channels/{guild_id}/{message['chan_id']}/{message['msg_id']}",txt)
+		for m in most_similar_messages:
+			txt = print_and_buffer(f"Q?{m['score']:3d}%  {m['msg']['msg']}",txt)
+		txt = print_and_buffer( 'REPLY : ' + reply['msg'],txt)
+		txt = print_and_buffer( 'THANKS: ' + message['msg'],txt)
 		txt = print_and_buffer('-----------------',txt)
 		#print(asker_messages)
-	with open('output.txt', 'w+',  encoding="utf-16") as f:
+	with open('output.txt', 'w+',  encoding="utf-8") as f:
 		f.write(txt)
