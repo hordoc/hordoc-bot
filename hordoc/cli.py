@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 
 import json
+import pathlib
 
 from dotenv import load_dotenv
 import click
 import sqlite_utils
+from sqlite_utils.db import Table
 from tabulate import tabulate
 
 from hordoc.bot import run_bot
@@ -25,7 +27,7 @@ load_dotenv()
 
 @click.group()
 @click.version_option()
-def cli():
+def cli() -> None:
     "HorDoc: AI-Powered Discord Community Support"
 
 
@@ -38,7 +40,7 @@ def cli():
     type=click.Path(file_okay=True, dir_okay=False, allow_dash=False),
     required=True,
 )
-def bot(db_path):
+def bot(db_path: pathlib.Path) -> None:
     "Run the HorDoc Discord bot"
     db = sqlite_utils.Database(db_path)
     ensure_tables(db)
@@ -51,7 +53,7 @@ def bot(db_path):
     type=click.Path(file_okay=True, dir_okay=False, allow_dash=False),
     required=True,
 )
-def install(db_path):
+def install(db_path: pathlib.Path) -> None:
     "Download and install models, create database"
     db = sqlite_utils.Database(db_path)
     click.echo(f"Creating tables in '{db_path}' ...")
@@ -70,7 +72,7 @@ def install(db_path):
     type=click.Path(file_okay=True, dir_okay=False, allow_dash=False),
     required=True,
 )
-def import_rephrased(db_path, json_file):
+def import_rephrased(db_path: pathlib.Path, json_file: pathlib.Path) -> None:
     "Import rephrased JSON into the database"
     db = sqlite_utils.Database(db_path)
     ensure_tables(db)
@@ -78,7 +80,7 @@ def import_rephrased(db_path, json_file):
     with open(json_file) as f:
         items = json.loads(f.read())
 
-        db["rephrased_questions"].insert_all(
+        Table(db, "rephrased_questions").insert_all(
             (
                 {
                     "id": item["id"],
@@ -103,7 +105,7 @@ def import_rephrased(db_path, json_file):
     type=click.Path(file_okay=True, dir_okay=False, allow_dash=False),
     required=True,
 )
-def import_answers(db_path, json_file):
+def import_answers(db_path: pathlib.Path, json_file: pathlib.Path) -> None:
     "Import answers JSON into the database"
     db = sqlite_utils.Database(db_path)
     ensure_tables(db)
@@ -111,7 +113,7 @@ def import_answers(db_path, json_file):
     with open(json_file) as f:
         items = json.loads(f.read())
 
-        db["answers"].insert_all(
+        Table(db, "answers").insert_all(
             (
                 {
                     "id": item["id"],
@@ -139,7 +141,9 @@ def import_answers(db_path, json_file):
 )
 @click.option("--top-k", "-k", type=int, default=5, show_default=True)
 @click.option("--answer-certainty", "-c", type=float, default=0.75, show_default=True)
-def answer_question(db_path, question, top_k, answer_certainty):
+def answer_question(
+    db_path: pathlib.Path, question: str, top_k: int, answer_certainty: float
+) -> None:
     "Try to answer a question"
     db = sqlite_utils.Database(db_path)
     ensure_tables(db)
@@ -181,7 +185,7 @@ def answer_question(db_path, question, top_k, answer_certainty):
     type=click.Path(file_okay=True, dir_okay=False, allow_dash=False),
     required=True,
 )
-def stats(db_path):
+def stats(db_path: pathlib.Path) -> None:
     "Show statistics for the given database"
 
     db = sqlite_utils.Database(db_path)

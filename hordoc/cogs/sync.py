@@ -11,7 +11,7 @@ class Sync(commands.Cog):
     From https://gist.github.com/AbstractUmbra/a9c188797ae194e592efe05fa129c57f
     """
 
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
 
     @commands.command()  # type: ignore

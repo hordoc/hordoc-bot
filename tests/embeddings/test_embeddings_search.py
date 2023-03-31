@@ -2,7 +2,7 @@ import numpy as np
 from hordoc.embeddings.embeddings_search import encode, decode
 
 
-def test_encode_decode():
+def test_encode_decode() -> None:
     vector = [
         0.02574840560555458,
         -0.005180681589990854,

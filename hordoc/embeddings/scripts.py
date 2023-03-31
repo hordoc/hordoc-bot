@@ -1,5 +1,6 @@
 import json
 import os
+from typing import Any, Dict, List, Optional, Tuple
 import urllib.parse
 
 import openai
@@ -16,7 +17,9 @@ GPT_MODEL = "gpt-3.5-turbo"
 openai.api_key = os.environ["OPENAI_API_KEY"]
 
 
-def find_closest_question(question, rows, threshold=0.8):
+def find_closest_question(
+    question: str, rows: List[List[int]], threshold: float = 0.8
+) -> List[int]:
     with open("./embeddings.json") as f:
         question = "I have kudos but cant generate the image"
         question_embedding = get_embeddings(question)
@@ -35,7 +38,9 @@ def find_closest_question(question, rows, threshold=0.8):
         return questions[0]
 
 
-def rephrase_from_db(rows, save_to_file=False):
+def rephrase_from_db(
+    rows: List[Tuple[int, str, str, str]], save_to_file: bool = False
+) -> List[Dict[str, Any]]:
     rephrased = [
         {"id": row[0], "rephrased": rephrase_question(row[2], row[3])} for row in rows
     ]
@@ -45,13 +50,13 @@ def rephrase_from_db(rows, save_to_file=False):
     return rephrased
 
 
-def get_channel_ids():
+def get_channel_ids() -> List[int]:
     with open("rephrased.json") as f:
         contents = json.loads(f.read())
         return [c["id"] for c in contents]
 
 
-def get_channel_question_embeddings(channel_ids):
+def get_channel_question_embeddings(channel_ids: List[int]) -> list[torch.Tensor]:
     with open("rephrased.json") as f:
         contents = json.loads(f.read())
         embeddings = [
@@ -60,7 +65,7 @@ def get_channel_question_embeddings(channel_ids):
         return embeddings
 
 
-def get_channel_messages(channel_id):
+def get_channel_messages(channel_id: int) -> List[str]:
     sql = "select id, content from messages where channel_id = :p0 order by id desc limit 101"
     params = urllib.parse.urlencode({"sql": sql, "channel_id": channel_id})
     url = f"{DB_URL}/horde_support.json?{params}"
@@ -70,7 +75,7 @@ def get_channel_messages(channel_id):
     return messages
 
 
-def build_channels_embeddings():
+def build_channels_embeddings() -> None:
     channel_ids = get_channel_ids()
     embeddings_list = []
     with open("channel_embeddings.json", "r+") as f:
@@ -87,7 +92,7 @@ def build_channels_embeddings():
         json.dump(embeddings_list, f)
 
 
-def get_channel_answers_embeddings(channel_id):
+def get_channel_answers_embeddings(channel_id: int) -> List[Dict[str, Any]]:
     with open("channel_embeddings.json") as f:
         contents = json.loads(f.read())
         channel = [c for c in contents if c["channel_id"] == channel_id][0]
@@ -98,7 +103,7 @@ def get_channel_answers_embeddings(channel_id):
         return embeddings
 
 
-def get_question_embeddings_for_channel(channel_id):
+def get_question_embeddings_for_channel(channel_id: int) -> List[torch.Tensor]:
     with open("rephrased.json") as f:
         contents = json.loads(f.read())
         embeddings = [
@@ -107,14 +112,14 @@ def get_question_embeddings_for_channel(channel_id):
         return embeddings
 
 
-def get_question_for_channel(channel_id):
+def get_questions_for_channel(channel_id: int) -> List[str]:
     with open("rephrased.json") as f:
         contents = json.loads(f.read())
-        question = [c["rephrased"] for c in contents if c["id"] == channel_id]
-        return question
+        questions = [c["rephrased"] for c in contents if c["id"] == channel_id]
+        return questions
 
 
-def build_answer(question, corpus):
+def build_answer(question: str, corpus: List[str]) -> str:
     prompt = f"""
 Using this data :
 {corpus}
@@ -127,7 +132,7 @@ Include relevant urls if they are known
         {"role": "system", "content": "Execute the following task :"},
         {"role": "user", "content": prompt},
     ]
-    return (
+    return str(
         openai.ChatCompletion.create(
             model=GPT_MODEL,
             messages=data,
@@ -139,7 +144,7 @@ Include relevant urls if they are known
     )
 
 
-def build_channel_response(channel_id):
+def build_channel_response(channel_id: int) -> Optional[str]:
     print(channel_id)
     messages = get_channel_messages(channel_id)
     if len(messages) < 2:
@@ -158,10 +163,10 @@ def build_channel_response(channel_id):
 
     closest_n_messages_text = [m[1] for m in closest_n_messages]
     print(closest_n_messages_text)
-    question = get_question_for_channel(channel_id)
+    questions = get_questions_for_channel(channel_id)
     print()
-    print(question)
-    answer = build_answer(question[0], closest_n_messages_text)
+    print(questions)
+    answer = build_answer(questions[0], closest_n_messages_text)
     return answer
 
 
