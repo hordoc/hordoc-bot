@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
+import sqlite_utils
 
-from hordoc.bot import HorDocBot
 from hordoc.data import (
     find_answer_by_id,
     # find_rephrased_questions_by_ids,
@@ -20,9 +20,10 @@ class Questions(commands.Cog):
     Answers support questions.
     """
 
-    def __init__(self, bot: HorDocBot):
+    def __init__(self, bot: commands.Bot, db: sqlite_utils.Database):
         self.bot = bot
-        self.idx = load_embeddings_from_db(bot.db)
+        self.db = db
+        self.idx = load_embeddings_from_db(db)
 
     @discord.app_commands.command(name="question", description="Ask something !")  # type: ignore
     @discord.app_commands.describe(question="Your question")
@@ -37,9 +38,9 @@ class Questions(commands.Cog):
 
         # answer_certainty = 0.8
         # if qs[0]["score"] > answer_certainty:
-        answer = find_answer_by_id(self.bot.db, qs[0]["id"])
+        answer = find_answer_by_id(self.db, qs[0]["id"])
         log_questions(
-            self.bot.db, interaction.id, str(interaction.user), question, answer, score
+            self.db, interaction.id, str(interaction.user), question, answer, score
         )
 
         async def answer_view_callback(
@@ -47,7 +48,7 @@ class Questions(commands.Cog):
         ) -> None:
             print(f"The feedback by {feedback_interaction.user} was {feedback}")
             log_questions_feedback(
-                self.bot.db,
+                self.db,
                 feedback_interaction.id,
                 interaction.id,
                 str(feedback_interaction.user),
@@ -69,7 +70,7 @@ class Questions(commands.Cog):
         #     )
 
         #     ids = [q["id"] for q in qs]
-        #     rephrased = find_rephrased_questions_by_ids(self.bot.db, ids)
+        #     rephrased = find_rephrased_questions_by_ids(self.db, ids)
 
         #     for i, q in enumerate(qs):
         #         score_pct = round(q["score"] * 100)
