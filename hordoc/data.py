@@ -1,9 +1,10 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, List, cast
+from typing import Dict, List, Optional
 
 import discord
 import sqlite_utils
+from sqlite_utils.db import Table
 
 
 def dt_to_ms(dt: datetime) -> int:
@@ -137,9 +138,9 @@ class MessageItem:
         )
 
 
-def find_answer_by_id(db: sqlite_utils.Database, id: int) -> str:
+def find_answer_by_id(db: sqlite_utils.Database, id: int) -> Optional[str]:
     rows = db.query("select answer from answers where id = :id", {"id": id})
-    return next(rows)["answer"]
+    return next(rows, {"answer": None})["answer"]
 
 
 def find_rephrased_questions_by_ids(
@@ -153,10 +154,53 @@ def find_rephrased_questions_by_ids(
     return {r["id"]: r["rephrased"] for r in rows}
 
 
+def log_questions(
+    db: sqlite_utils.Database,
+    id: int,
+    user_id: str,
+    question: str,
+    answer: Optional[str],
+    score: Optional[float],
+    timestamp: Optional[int] = None,
+):
+    if timestamp is None:
+        timestamp = dt_to_ms(datetime.utcnow())
+    Table(db, "log_questions").insert(
+        {
+            "id": id,
+            "timestamp": timestamp,
+            "user_id": user_id,
+            "question": question,
+            "answer": answer,
+            "score": score,
+        }
+    )
+
+
+def log_questions_feedback(
+    db: sqlite_utils.Database,
+    id: int,
+    question_id: int,
+    user_id: str,
+    feedback: str,
+    timestamp: Optional[int] = None,
+):
+    if timestamp is None:
+        timestamp = dt_to_ms(datetime.utcnow())
+    Table(db, "log_questions_feedback").insert(
+        {
+            "id": id,
+            "question_id": question_id,
+            "timestamp": timestamp,
+            "user_id": user_id,
+            "feedback": feedback,
+        }
+    )
+
+
 def _ensure_table(db: sqlite_utils.Database, table_name: str, *args, **kwargs):
     if table_name not in db.table_names():
-        table = cast(sqlite_utils.db.Table, db.table(table_name))
-        table.create(*args, **kwargs)
+        Table(db, table_name).create(*args, **kwargs)
 
 
 def ensure_tables(db: sqlite_utils.Database):
@@ -256,5 +300,33 @@ def ensure_tables(db: sqlite_utils.Database):
         column_order=["id", "question", "answer", "messages"],
         foreign_keys=[
             ("id", "threads", "id"),
+        ],
+    )
+    _ensure_table(
+        db,
+        "log_questions",
+        {
+            "id": int,
+            "timestamp": int,
+            "user_id": str,
+            "question": str,
+            "answer": str,
+            "score": float,
+        },
+        pk="id",
+    )
+    _ensure_table(
+        db,
+        "log_questions_feedback",
+        {
+            "id": int,
+            "question_id": int,
+            "timestamp": int,
+            "user_id": str,
+            "feedback": str,
+        },
+        pk="id",
+        foreign_keys=[
+            ("question_id", "log_questions", "id"),
         ],
     )

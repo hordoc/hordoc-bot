@@ -18,3 +18,8 @@
 # Apply Black
 @black:
   pipenv run black .
+
+# Running continuously watching for file changes using watchexec
+# https://github.com/watchexec/watchexec
+@watch:
+  watchexec just black lint test
