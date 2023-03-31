@@ -56,7 +56,7 @@ def get_channel_ids() -> List[int]:
         return [c["id"] for c in contents]
 
 
-def get_channel_question_embeddings(channel_ids: List[int]) -> list[torch.Tensor]:
+def get_channel_question_embeddings(channel_ids: List[int]) -> List[torch.Tensor]:
     with open("rephrased.json") as f:
         contents = json.loads(f.read())
         embeddings = [
