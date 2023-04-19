@@ -2,6 +2,7 @@ from collections import Counter
 from math import floor
 from pprint import pprint as pp
 import time
+from torch import Tensor
 from typing import Dict, List, Optional, Tuple, Union
 
 import sqlite_utils
@@ -19,11 +20,11 @@ EMBEDDINGS_MODEL = "intfloat/e5-small"
 model = SentenceTransformer(EMBEDDINGS_MODEL)
 
 
-def get_embeddings(text: Union[list, str]):
+def get_embeddings(text: Union[list, str]) -> Tensor:
     return model.encode(text)
 
 
-def score_bucket(x: float, base=5) -> int:
+def score_bucket(x: float, base: int = 5) -> int:
     return base * floor(x / base)
 
 
@@ -45,7 +46,7 @@ def get_messages_with_thanks_and_reply(db: Database) -> List[Dict]:
     return db.execute_returning_dicts(query)
 
 
-def get_message_by_id(db: Database, msg_id) -> Optional[Dict]:
+def get_message_by_id(db: Database, msg_id: int) -> Optional[Dict]:
     query = f"""
     select chan_id, msg_id, uid, t, user, msg, r, te, re
     from horde_help
@@ -58,7 +59,7 @@ def get_message_by_id(db: Database, msg_id) -> Optional[Dict]:
 
 
 def get_messages_by_time_delta_and_uid(
-    db: Database, start_time, delta, uid, channel_id
+    db: Database, start_time: int, delta: int, uid: int, channel_id: int
 ) -> List[Dict]:
     query = f"""
     select chan_id, msg_id, uid, t, user, msg
@@ -96,7 +97,7 @@ def main() -> None:  # noqa: C901
     annotations, annotation_counters = load_annotations(db)
     counters: Counter[str] = Counter()
 
-    def process_message(message):
+    def process_message(message: Dict):
         if message["msg_id"] not in annotations:
             counters["ignore_no_annotation"] += 1
             return
