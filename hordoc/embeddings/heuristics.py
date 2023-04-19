@@ -97,25 +97,25 @@ def main() -> None:  # noqa: C901
     annotations, annotation_counters = load_annotations(db)
     counters: Counter[str] = Counter()
 
-    def process_message(message: Dict):
+    def process_message(message: Dict) -> Optional[str]:
         if message["msg_id"] not in annotations:
             counters["ignore_no_annotation"] += 1
-            return
+            return None
         annotation = annotations[message["msg_id"]]
         counters["messages_in"] += 1
         reply = get_message_by_id(db, message["r"])
         if reply is None:
             counters["skip_reply_not_found"] += 1
             counters["messages_skipped"] += 1
-            return
+            return None
         if reply["uid"] == message["uid"]:
             counters["skip_reply_to_self"] += 1
             counters["messages_skipped"] += 1
-            return
+            return None
         if reply["msg_id"] != annotation["reply_msg_id"]:
             counters["bad_reply_id"] += 1
             counters["messages_skipped"] += 1
-            return
+            return None
         asker_messages = get_messages_by_time_delta_and_uid(
             db,
             int(message["t"]),
@@ -126,7 +126,7 @@ def main() -> None:  # noqa: C901
         if len(asker_messages) == 0:
             counters["skip_no_asker_messages"] += 1
             counters["messages_skipped"] += 1
-            return
+            return None
         reply_embeddings = get_embeddings([reply["msg"]])[0]
         askers_messages_text = [m["msg"] for m in asker_messages]
         askers_messages_embeddings = get_embeddings(askers_messages_text)
@@ -139,7 +139,7 @@ def main() -> None:  # noqa: C901
         if len(most_similars) == 0:
             counters["skip_no_most_similars"] += 1
             counters["messages_skipped"] += 1
-            return
+            return None
         most_similar_messages = [
             {"msg": asker_messages[m["corpus_id"]], "score": floor(m["score"] * 100)}
             for m in most_similars
