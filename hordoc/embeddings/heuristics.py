@@ -2,6 +2,7 @@ from collections import Counter
 from math import floor
 from pprint import pprint as pp
 import time
+from typing import Dict, List, Optional, Tuple, Union
 
 import sqlite_utils
 from sqlite_utils import Database
@@ -18,11 +19,11 @@ EMBEDDINGS_MODEL = "intfloat/e5-small"
 model = SentenceTransformer(EMBEDDINGS_MODEL)
 
 
-def get_embeddings(text):
+def get_embeddings(text: Union[list, str]):
     return model.encode(text)
 
 
-def score_bucket(x, base=5):
+def score_bucket(x: float, base=5) -> int:
     return base * floor(x / base)
 
 
@@ -32,7 +33,7 @@ score_threshold = 0.5
 time_delta_milliseconds = 1000 * 60 * 60 * hours_backlog
 
 
-def get_messages_with_thanks_and_reply(db: Database):
+def get_messages_with_thanks_and_reply(db: Database) -> List[Dict]:
     excluded_users = ("db0", "Airic")
     query = f"""
     select chan_id, msg_id, uid, t, user, msg, r
@@ -44,7 +45,7 @@ def get_messages_with_thanks_and_reply(db: Database):
     return db.execute_returning_dicts(query)
 
 
-def get_message_by_id(db: Database, msg_id):
+def get_message_by_id(db: Database, msg_id) -> Optional[Dict]:
     query = f"""
     select chan_id, msg_id, uid, t, user, msg, r, te, re
     from horde_help
@@ -58,7 +59,7 @@ def get_message_by_id(db: Database, msg_id):
 
 def get_messages_by_time_delta_and_uid(
     db: Database, start_time, delta, uid, channel_id
-):
+) -> List[Dict]:
     query = f"""
     select chan_id, msg_id, uid, t, user, msg
     from horde_help
@@ -71,7 +72,7 @@ def get_messages_by_time_delta_and_uid(
     return db.execute_returning_dicts(query)
 
 
-def load_annotations(db: Database):
+def load_annotations(db: Database) -> Tuple[Dict, Counter]:
     annotations = {}
     counters: Counter[str] = Counter()
 
@@ -91,7 +92,7 @@ def load_annotations(db: Database):
     return annotations, counters
 
 
-def main():  # noqa: C901
+def main() -> None:  # noqa: C901
     annotations, annotation_counters = load_annotations(db)
     counters: Counter[str] = Counter()
 
